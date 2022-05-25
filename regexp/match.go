@@ -351,6 +351,11 @@ func isWordByte(c int) bool {
 		c == '_'
 }
 
+type LineHit struct {
+	Lineno int
+	Line   string
+}
+
 // TODO:
 type Grep struct {
 	Regexp *Regexp   // regexp to search for
@@ -373,6 +378,21 @@ type Grep struct {
 	PostContext int // number of lines to print before
 
 	buf []byte
+
+	// Note that there may be several matches per line, but we're ignorant.
+	MatchedLines []LineHit
+}
+
+func (g *Grep) initForMatching() {
+	if g.buf == nil {
+		g.buf = make([]byte, 1<<20)
+	}
+
+	if g.MatchedLines == nil {
+		g.MatchedLines = make([]LineHit, 0, 100)
+	} else {
+		g.MatchedLines = g.MatchedLines[:0]
+	}
 }
 
 func (g *Grep) AddFlags() {
@@ -412,6 +432,17 @@ func (g *Grep) File(name string) {
 	}
 	defer f.Close()
 	g.Reader(f, name)
+}
+
+func (g *Grep) File2(name string) {
+	f, err := os.Open(name)
+	if err != nil {
+		fmt.Fprintf(g.Stderr, "%s\n", err)
+		g.initForMatching()
+		return
+	}
+	defer f.Close()
+	g.FindMatches(f, name)
 }
 
 var nl = []byte{'\n'}
@@ -645,4 +676,55 @@ func chomp(s []byte) []byte {
 		i--
 	}
 	return s[:i]
+}
+
+func (g *Grep) FindMatches(r io.Reader, name string) {
+	g.initForMatching()
+	var (
+		buf       = g.buf[:0]
+		lineno    = 1
+		beginText = true
+		endText   = false
+	)
+	for {
+		n, err := io.ReadFull(r, buf[len(buf):cap(buf)])
+		buf = buf[:len(buf)+n]
+		end := len(buf)
+		if err == nil {
+			end = bytes.LastIndex(buf, nl) + 1
+		} else {
+			endText = true
+		}
+		chunkStart := 0
+		for chunkStart < end {
+			m1 := g.Regexp.Match(buf[chunkStart:end], beginText, endText) + chunkStart
+			beginText = false
+			if m1 < chunkStart {
+				break
+			}
+			g.Match = true
+			lineStart := bytes.LastIndex(buf[chunkStart:m1], nl) + 1 + chunkStart
+			lineEnd := m1 + 1
+			if lineEnd > end {
+				lineEnd = end
+			}
+			lineno += countNL(buf[chunkStart:lineStart])
+			line := buf[lineStart:lineEnd]
+			g.MatchedLines = append(g.MatchedLines, LineHit{
+				Lineno: lineno,
+				Line:   string(line),
+			})
+			lineno++
+			chunkStart = lineEnd
+		}
+		lineno += countNL(buf[chunkStart:end])
+		n = copy(buf, buf[end:])
+		buf = buf[:n]
+		if len(buf) == 0 && err != nil {
+			if err != io.EOF && err != io.ErrUnexpectedEOF {
+				fmt.Fprintf(g.Stderr, "%s: %v\n", name, err)
+			}
+			break
+		}
+	}
 }

@@ -16,10 +16,10 @@ import (
 	"github.com/freva/codesearch/index"
 )
 
-var usageMessage = `usage: cindex [-list] [-reset] [-zip] [path...]
+var usageMessage = `usage: cindex [-index file] [-list] [-reset] [-zip] [path...]
 
 Cindex prepares the trigram index for use by csearch.  The index is the
-file named by $CSEARCHINDEX, or else $HOME/.csearchindex.
+file named by -index, or else $CSEARCHINDEX, or else $HOME/.csearchindex.
 
 The simplest invocation is
 
@@ -58,6 +58,7 @@ func usage() {
 }
 
 var (
+	indexFlag   = flag.String("index", "", "path to index file")
 	listFlag    = flag.Bool("list", false, "list indexed paths and exit")
 	resetFlag   = flag.Bool("reset", false, "discard existing index")
 	verboseFlag = flag.Bool("verbose", false, "print extra information")
@@ -72,8 +73,10 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	indexpath := index.File(*indexFlag)
+
 	if *listFlag {
-		ix := index.Open(index.File())
+		ix := index.Open(index.File(indexpath))
 		if *checkFlag {
 			if err := ix.Check(); err != nil {
 				log.Fatal(err)
@@ -96,12 +99,12 @@ func main() {
 	}
 
 	if *resetFlag && flag.NArg() == 0 {
-		os.Remove(index.File())
+		os.Remove(index.File(indexpath))
 		return
 	}
 	var roots []index.Path
 	if flag.NArg() == 0 {
-		ix := index.Open(index.File())
+		ix := index.Open(index.File(indexpath))
 		roots = slices.Collect(ix.Roots().All())
 	} else {
 		// Translate arguments to absolute paths so that
@@ -117,7 +120,7 @@ func main() {
 		slices.SortFunc(roots, index.Path.Compare)
 	}
 
-	master := index.File()
+	master := index.File(indexpath)
 	if _, err := os.Stat(master); err != nil {
 		// Does not exist.
 		*resetFlag = true

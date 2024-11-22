@@ -15,8 +15,8 @@ import (
 	"net/url"
 	"os"
 	stdregexp "regexp"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/hakonhall/codesearch/index"
 	"github.com/hakonhall/codesearch/regexp"
@@ -48,12 +48,12 @@ func usage() {
 }
 
 var (
-	fFlag       = flag.String("f", "", "Path to file index (required)")
-	indexFlag   = flag.String("index", "", "Path to index file [CSEARCHINDEX]")
-	pFlag       = flag.Int("p", 80, "Port to listen to [80]")
-	sFlag       = flag.String("s", "", "Path to the source tree (required)")
-	tFlag       = flag.String("t", "", "Path to the timestamp file of the last index update (required)")
-	wFlag       = flag.String("w", "", "Path to static files to serve [cmd/cserver/static/]")
+	fFlag     = flag.String("f", "", "Path to file index (required)")
+	indexFlag = flag.String("index", "", "Path to index file [CSEARCHINDEX]")
+	pFlag     = flag.Int("p", 80, "Port to listen to [80]")
+	sFlag     = flag.String("s", "", "Path to the source tree (required)")
+	tFlag     = flag.String("t", "", "Path to the timestamp file of the last index update (required)")
+	wFlag     = flag.String("w", "", "Path to static files to serve [cmd/cserver/static/]")
 )
 
 func EscapeChar(char rune) string {
@@ -102,16 +102,16 @@ func JsStringLiteralOrNull(text *string) string {
 }
 
 func JsStringLiteral(text string) string {
-        escaped := EscapeString(text)
-	literal := "'";
-        for _, r := range escaped {
-                if r == '\'' {
-                	literal += "\\'"
-	        } else {
-                	literal += string(r)
-                }
-        }
-        return literal + "'"
+	escaped := EscapeString(text)
+	literal := "'"
+	for _, r := range escaped {
+		if r == '\'' {
+			literal += "\\'"
+		} else {
+			literal += string(r)
+		}
+	}
+	return literal + "'"
 }
 
 func RemovePathPrefix(path string) string {
@@ -146,7 +146,7 @@ func query_append_int(query string, unescaped_param_name string,
 }
 
 func pretty_print_query(query string, file string, exclude_file string,
-                        hit int, line int, max_hits int, ignore_case bool) string {
+	hit int, line int, max_hits int, ignore_case bool) string {
 	uri_query := pretty_print_query3(query, file, exclude_file,
 		max_hits, ignore_case)
 	uri_query = query_append_int(uri_query, "h", hit, -1)
@@ -160,7 +160,7 @@ func pretty_print_query2(file string, exclude_file string, max_hits int,
 		ignore_case)
 }
 
-func pretty_print_query3(search string, file string ,
+func pretty_print_query3(search string, file string,
 	exclude_file string, max_hits int, ignore_case bool) string {
 	uri_query := ""
 	uri_query = query_append(uri_query, "q", search, "")
@@ -189,7 +189,7 @@ func PrintHitFooter(writer http.ResponseWriter,
 		truncated_string = "false"
 	}
 
-	if (select_hit < 0 || select_hit > num_hits_shown) {
+	if select_hit < 0 || select_hit > num_hits_shown {
 		select_hit = 0
 	}
 
@@ -206,12 +206,12 @@ func PrintHitFooter(writer http.ResponseWriter,
 
 <hr class="end-of-results"/>
 `, num_hits_shown, truncated_string, select_hit, direction,
-   files_matched_shown)
+		files_matched_shown)
 
 	if truncated {
 		return fmt.Sprintf("%d matches in %d files, but not showing matches in ~%d more files",
 			num_hits_shown, files_matched_shown,
-			files_matched - files_matched_shown)
+			files_matched-files_matched_shown)
 	} else {
 		return fmt.Sprintf("%d matches in %d files",
 			num_hits_shown, files_matched_shown)
@@ -239,7 +239,7 @@ func PrintNoHitFooter(writer http.ResponseWriter, hasQuery bool) string {
 func GetNewFileString(path string) string {
 	var resolvedFile *File = resolvePath(path)
 	if resolvedFile == nil {
-		return "console.error(\"Bad path\")";
+		return "console.error(\"Bad path\")"
 	}
 	jsDir := JsStringLiteral(resolvedFile.Branch.Dir)
 	jsRelpath := JsStringLiteral(resolvedFile.Relpath[1:])
@@ -323,18 +323,18 @@ func PrintHit(writer http.ResponseWriter, query string, re *stdregexp.Regexp,
 	ignore_case bool) {
 	uri_query := pretty_print_query(
 		query, file, exclude_file, line_index, hit.Lineno, max_hits,
-			ignore_case)
+		ignore_case)
 	href := fmt.Sprintf("/file/%s?%s#l%d", EscapeForUrlPath(path),
-		uri_query, hit.Lineno - 10);
+		uri_query, hit.Lineno-10)
 	href = EscapeForAttributeValue(href)
 
 	html_path := fmt.Sprintf(`<a id="file-link-%d" href="%s">%d.</a>`,
 		line_index, href, hit.Lineno)
 
 	html_line, _ := escapeAndMarkLine(hit.Line, line_index, re)
-	
+
 	line_hit_class := "line-hit"
-	if (line_index + 1) % 2 == 0 {
+	if (line_index+1)%2 == 0 {
 		line_hit_class += " even-line"
 	} else {
 		line_hit_class += " odd-line"
@@ -359,7 +359,7 @@ func Search(writer http.ResponseWriter, request *http.Request, query string,
 	// (?m) => ^ and $ match beginning and end of line, respectively
 	pattern := "(?m)" + query
 	if ignore_case {
-		pattern = "(?i)" + pattern;
+		pattern = "(?i)" + pattern
 	}
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -478,7 +478,7 @@ func Search(writer http.ResponseWriter, request *http.Request, query string,
 					ignore_case)
 
 				for i, hit := range grep.MatchedLines {
-					if num_hits >= max_hits + 20 {
+					if num_hits >= max_hits+20 {
 						truncated_hits = true
 						break
 					}
@@ -515,7 +515,7 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 
 	file_pattern := "(?m)" + file_filter
 	if ignore_case {
-		file_pattern = "(?i)" + file_pattern;
+		file_pattern = "(?i)" + file_pattern
 	}
 	file_re, err := regexp.Compile(file_pattern)
 	if err != nil {
@@ -528,14 +528,14 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 	file_stdre, err := stdregexp.Compile(file_pattern)
 	if err != nil {
 		log.Print(err)
-		file_stdre = nil  // Handled in escapeAndMarkLine
+		file_stdre = nil // Handled in escapeAndMarkLine
 	}
 
 	var xfile_re *regexp.Regexp
 	if exclude_file_filter != "" {
 		xfile_pattern := exclude_file_filter
 		if ignore_case {
-			xfile_pattern = "(?i)" + xfile_pattern;
+			xfile_pattern = "(?i)" + xfile_pattern
 		}
 		xfile_re, err = regexp.Compile(xfile_pattern)
 		if err != nil {
@@ -568,7 +568,7 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 		}
 
 		manifest := idx.Name(fileid)
-		grep := regexp.Grep{ Regexp: file_re, Stderr: os.Stderr }
+		grep := regexp.Grep{Regexp: file_re, Stderr: os.Stderr}
 		// This is no better than just looping through the lines
 		// of the files and matching (AFAIK), so there's only a
 		// benefit if we don't traverse through all files: Split
@@ -576,14 +576,14 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 		grep.File2(manifest)
 
 		for _, hit := range grep.MatchedLines {
-			if num_hits >= max_hits + 10 {
+			if num_hits >= max_hits+10 {
 				truncated = true
 				break
 			}
 
 			path := hit.Line
-			if len(path) > 0 && path[len(path) - 1] == '\n' {
-				path = path[:len(path) - 1]
+			if len(path) > 0 && path[len(path)-1] == '\n' {
+				path = path[:len(path)-1]
 			}
 
 			if xfile_re != nil &&
@@ -625,9 +625,9 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
   </td>
 </tr>
 `, num_hits, selected_class, num_hits, href, formatted_line, GetNewFileString(path))
-			
+
 			num_hits += 1
-			
+
 		}
 	}
 
@@ -639,7 +639,7 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 </script>
 `, selected_id, num_hits)
 
-        if (num_hits > 0) {
+	if num_hits > 0 {
 		fmt.Fprintf(writer, `
 <hr class="end-of-results"/>
 `)
@@ -665,7 +665,7 @@ func PrintTop(writer http.ResponseWriter, error string, query string,
 	}
 
 	saved_h_input := ""
-	if (saved_h != "") {
+	if saved_h != "" {
 		saved_h_input = fmt.Sprintf(
 			`<input id="saved_h" type="hidden" value="%s"/>`,
 			EscapeForAttributeValue(saved_h))
@@ -736,17 +736,17 @@ func PrintTop(writer http.ResponseWriter, error string, query string,
     </div>
 
 `, javascript_filename, error,
-   EscapeForAttributeValue(query),
-   EscapeForAttributeValue(file_filter),
-   EscapeForAttributeValue(exclude_file_filter),
-   checked_string,
-   saved_h_input)
+		EscapeForAttributeValue(query),
+		EscapeForAttributeValue(file_filter),
+		EscapeForAttributeValue(exclude_file_filter),
+		checked_string,
+		saved_h_input)
 }
 
 func PrintBottom(writer http.ResponseWriter, message string) {
 	timestamp := ""
 	data, err := ioutil.ReadFile(*tFlag)
-	if (err != nil) {
+	if err != nil {
 		log.Print(err)
 		timestamp = ""
 	} else {
@@ -790,7 +790,7 @@ func search_handler(w http.ResponseWriter, r *http.Request) {
 	} else if max_hits > 1000 {
 		max_hits = 1000
 	}
-	
+
 	saved_h := ""
 	message := ""
 
@@ -808,14 +808,14 @@ func search_handler(w http.ResponseWriter, r *http.Request) {
 				ignore_case)
 		} else {
 			message = PrintNoHitFooter(w, false)
-		}			
+		}
 	}
 	PrintBottom(w, message)
 }
 
 type MatchedLines struct {
 	Linenos []int
-	Index int
+	Index   int
 }
 
 func PrintFileHeader(writer http.ResponseWriter, path string) {
@@ -908,7 +908,7 @@ func ShowFile(writer http.ResponseWriter, request *http.Request,
 	i := 1
 	scanner := bufio.NewScanner(file)
 	// Got this error with a 68kB line: bufio.Scanner: token too long
-	const maxCapacity = 1024*1024  // 1 MB
+	const maxCapacity = 1024 * 1024 // 1 MB
 	buf := make([]byte, maxCapacity)
 	scanner.Buffer(buf, maxCapacity)
 	for scanner.Scan() {
@@ -961,32 +961,32 @@ func file_handler(w http.ResponseWriter, request *http.Request) {
 }
 
 type Manifest struct {
-	Servers []Server
+	Servers  []Server
 	Branches []Branch
 }
 
 type Server struct {
 	Name string
-	Url string
+	Url  string
 }
 
 type Branch struct {
 	Server string
-	Dir string
-	Repo string
+	Dir    string
+	Repo   string
 	Branch *string
 }
 
 func (s Branch) ResolveServer() Server {
 	server, ok := SERVERS[s.Server]
-	if ! ok {
+	if !ok {
 		log.Print("Failed to find " + s.Server + " in SERVERS")
 	}
 	return server
 }
 
 type File struct {
-	Branch Branch
+	Branch  Branch
 	Relpath string
 }
 
@@ -1018,7 +1018,7 @@ func readManifest(path string) {
 
 	BRANCHES = make(map[string]Branch)
 	for _, branch := range manifest.Branches {
-		BRANCHES["/" + branch.Dir] = branch
+		BRANCHES["/"+branch.Dir] = branch
 	}
 }
 
@@ -1050,64 +1050,64 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-        if *fFlag == "" {
+	if *fFlag == "" {
 		log.Fatal("-f is required, see -help for usage")
 	}
-        fileIndexFileInfo, e := os.Stat(*fFlag)
-        if e != nil {
+	fileIndexFileInfo, e := os.Stat(*fFlag)
+	if e != nil {
 		if os.IsNotExist(e) {
 			log.Fatal("No such index file: " + *fFlag)
 		} else {
 			log.Fatal("Failed to stat file: " + *fFlag)
 		}
-        }
-        if !fileIndexFileInfo.Mode().IsRegular() {
-		log.Fatal("Not an index file: " + *fFlag);
-        }
+	}
+	if !fileIndexFileInfo.Mode().IsRegular() {
+		log.Fatal("Not an index file: " + *fFlag)
+	}
 
 	INDEX_PATH = index.File(*indexFlag)
-        indexfileInfo, e := os.Stat(INDEX_PATH)
-        if e != nil {
+	indexfileInfo, e := os.Stat(INDEX_PATH)
+	if e != nil {
 		if os.IsNotExist(e) {
 			log.Fatal("No such index file: " + INDEX_PATH)
 		} else {
 			log.Fatal("Failed to stat file: " + INDEX_PATH)
 		}
-        }
-        if !indexfileInfo.Mode().IsRegular() {
-		log.Fatal("Index file points to a directory: " + INDEX_PATH);
-        }
+	}
+	if !indexfileInfo.Mode().IsRegular() {
+		log.Fatal("Index file points to a directory: " + INDEX_PATH)
+	}
 
-        if *sFlag == "" {
+	if *sFlag == "" {
 		log.Fatal("-s is required, see -help for usage")
 	}
-        if (*sFlag)[len(*sFlag)-1:] != "/" {
+	if (*sFlag)[len(*sFlag)-1:] != "/" {
 		*sFlag += "/"
-        }
+	}
 
-        if *tFlag == "" {
+	if *tFlag == "" {
 		log.Fatal("-t is required, see -help for usage")
 	}
 
-        if *wFlag == "" {
+	if *wFlag == "" {
 		log.Fatal("-w is required, see -help for usage")
 	}
-        sFileInfo, e := os.Stat(*wFlag)
-        if e != nil {
+	sFileInfo, e := os.Stat(*wFlag)
+	if e != nil {
 		log.Fatal("Failed to open '" + *wFlag + "'")
-        }
-        if !sFileInfo.IsDir() {
-		log.Fatal("Not a directory: " + *wFlag);
-        }
-        sFileInfo, e = os.Stat(*wFlag + "/static")
-        if e != nil || !sFileInfo.IsDir() {
+	}
+	if !sFileInfo.IsDir() {
+		log.Fatal("Not a directory: " + *wFlag)
+	}
+	sFileInfo, e = os.Stat(*wFlag + "/static")
+	if e != nil || !sFileInfo.IsDir() {
 		log.Fatal("Does not look like a path to cmd/cserver/static: " + *wFlag)
-        }
+	}
 	readManifest(*wFlag + "/static/repos.json")
 
 	http.HandleFunc("/", search_handler)
 	http.Handle("/static/", http.FileServer(http.Dir(*wFlag)))
 	http.HandleFunc("/file/", file_handler)
-	http.ListenAndServe(":" + strconv.Itoa(*pFlag), nil)
-	fmt.Println("ListenAndServe returned, exiting process!");
+	http.ListenAndServe(":"+strconv.Itoa(*pFlag), nil)
+	fmt.Println("ListenAndServe returned, exiting process!")
 }

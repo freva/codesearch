@@ -1,0 +1,7 @@
+.DS_STORE
+.idea
+*.iml
+.vscode
+
+build
+node_modules/

@@ -199,9 +199,9 @@ func PrintNoHitFooter(writer http.ResponseWriter, hasQuery bool) string {
 }
 
 func GetNewFileString(path string) string {
-	var resolvedFile *File = resolvePath(path)
-	if resolvedFile == nil {
-		return "console.error(\"Bad path\")"
+	var resolvedFile, err = resolvePath(path)
+	if err != nil {
+		return fmt.Sprintf("console.error(\"Bad path: %s\")", JsStringLiteral(err.Error()))
 	}
 	jsDir := JsStringLiteral(resolvedFile.Branch.Dir)
 	jsRelpath := JsStringLiteral(resolvedFile.Relpath[1:])

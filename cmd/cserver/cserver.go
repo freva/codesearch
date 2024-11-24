@@ -113,25 +113,23 @@ func readManifest(path string) {
 }
 
 // path must be relative to the serving directory (sFlag).
-func resolvePath(path string) *File {
+func resolvePath(path string) (*File, error) {
 	prefix := ""
 	suffix := "/" + path
 	for {
-		var offset int = strings.Index(suffix[1:], "/") + 1
+		var offset = strings.Index(suffix[1:], "/") + 1
 		if offset < 1 {
-			log.Print("Failed to find branch for " + path)
-			return nil
+			return nil, fmt.Errorf("Failed to find branch for " + path)
 		}
-		var name string = suffix[:offset]
+		var name = suffix[:offset]
 		if len(name) == 0 {
-			log.Print("Found empty component for " + path)
-			return nil
+			return nil, fmt.Errorf("Found empty component for " + path)
 		}
 		prefix += name
 		suffix = suffix[offset:]
 		branch, ok := BRANCHES[prefix]
 		if ok {
-			return &File{Branch: branch, Relpath: suffix}
+			return &File{Branch: branch, Relpath: suffix}, nil
 		}
 	}
 }
@@ -198,6 +196,8 @@ func main() {
 	http.HandleFunc("/", search_handler)
 	http.Handle("/static/", http.FileServer(http.Dir(*wFlag)))
 	http.HandleFunc("/file/", file_handler)
+	http.HandleFunc("/rest/file", RestFileHandler)
+	http.HandleFunc("/rest/search", RestSearchHandler)
 	http.ListenAndServe(":"+strconv.Itoa(*pFlag), nil)
 	fmt.Println("ListenAndServe returned, exiting process!")
 }

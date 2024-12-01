@@ -392,13 +392,15 @@ func restShowFile(w http.ResponseWriter, path string, query string, ignoreCase b
 			return err
 		}
 
-		matches := re.FindStringSubmatchIndex(line)
-		if matches != nil {
-			matchedEntries = append(matchedEntries, MatchedEntry{
-				Line:  i,
-				Start: matches[0],
-				End:   matches[1],
-			})
+		if query != "" {
+			matches := re.FindStringSubmatchIndex(line)
+			if matches != nil {
+				matchedEntries = append(matchedEntries, MatchedEntry{
+					Line:  i,
+					Start: matches[0],
+					End:   matches[1],
+				})
+			}
 		}
 		i = i + 1
 	}

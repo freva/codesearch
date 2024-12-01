@@ -1,0 +1,51 @@
+* {
+    margin: 0;
+}
+
+.shiki code {
+    display: flex;
+    flex-direction: column;
+}
+
+.shiki .line {
+    height: 19.5px
+}
+
+.line.highlight {
+    background: #ffffc0;
+}
+
+.highlight {
+    background: #ffff00;
+}
+
+.container {
+    padding: 15px;
+}
+
+a {
+    text-decoration: none;
+}
+
+table.hit {
+    width: 100%;
+}
+
+table.hit td:first-child {
+    width: 5ex;
+    text-align: right;
+    font-family: monospace;
+    font-size: 90%;
+}
+
+table.hit td:first-child a {
+    color: black;
+}
+
+table.hit pre {
+    padding: 2px;
+    margin: 0;
+    border: 1px solid #888;
+    line-height: normal;
+    cursor: pointer;
+}

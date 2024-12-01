@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useLayoutEffect } from 'react';
 import { Get } from '../../libs/fetcher';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Alert, Loader } from '@mantine/core';
-import './index.css';
+import { CodeHighlight } from '../file/code-highlight';
 
 type Range = [number, number];
 type Line = { line: string; number: number; ranges?: Range[] };
@@ -13,11 +13,17 @@ type SearchResponse = { files: File[]; truncated: boolean; hits: number };
 
 type HttpState = { loading: boolean; error?: Error; response?: SearchResponse };
 
-function CodeLine({ line }: { line: Line }): ReactNode {
+function CodeLine({ line, path }: { line: Line; path: string }): ReactNode {
+  const navigate = useNavigate();
+  const link = `/file/${path}${window.location.search}#L${line.number}`;
   return (
     <tr>
-      <td>{line.number}.</td>
-      <td>{line.line}</td>
+      <td>
+        <Link to={link}>{line.number}.</Link>
+      </td>
+      <td onClick={() => navigate(link)}>
+        <CodeHighlight path={path} code={line.line} />
+      </td>
     </tr>
   );
 }
@@ -25,11 +31,13 @@ function CodeLine({ line }: { line: Line }): ReactNode {
 function Hit({ file }: { file: File }): ReactNode {
   return (
     <div>
-      <div>{file.path}</div>
+      <div>
+        <Link to={`/file/${file.path}`}>{file.path}</Link>
+      </div>
       {file.lines && (
-        <table>
+        <table className="hit">
           {file.lines.map((line) => (
-            <CodeLine key={line.number} line={line} />
+            <CodeLine key={line.number} line={line} path={file.path} />
           ))}
         </table>
       )}
@@ -56,10 +64,10 @@ export function Search(): ReactNode {
       <Alert variant="filled" color="red" title={error.message} m="xl"></Alert>
     );
   return (
-    <>
+    <div className="container">
       {response!.files.map((file, i) => (
         <Hit key={`${i} ${file.path}`} file={file} />
       ))}
-    </>
+    </div>
   );
 }

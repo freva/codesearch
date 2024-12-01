@@ -68,7 +68,7 @@ export function Header(): ReactNode {
           </Button>
         </Shortcut>
       </Group>
-      <Divider />
+      <Divider mb="sm" />
     </form>
   );
 }

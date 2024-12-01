@@ -6,9 +6,7 @@ const viteConfig = defineViteConfig({
   build: {
     sourcemap: 'hidden',
   },
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
 });
 
 const vitestConfig = defineVitestConfig({

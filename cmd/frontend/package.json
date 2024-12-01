@@ -11,9 +11,6 @@
     "tsc": "tsc"
   },
   "dependencies": {
-    "@fortawesome/free-brands-svg-icons": "^6",
-    "@fortawesome/free-regular-svg-icons": "^6",
-    "@fortawesome/free-solid-svg-icons": "^6",
     "@mantine/core": "^7",
     "@mantine/form": "^7",
     "@mantine/hooks": "^7",
@@ -21,7 +18,8 @@
     "lodash": "^4",
     "react": "^18",
     "react-dom": "^18",
-    "react-router-dom": "^6"
+    "react-router-dom": "^6",
+    "shiki": "^1"
   },
   "devDependencies": {
     "@eslint/js": "^9",

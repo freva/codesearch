@@ -1,17 +1,9 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { useLayoutEffect } from 'react';
-import { Get } from '../../libs/fetcher';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Alert, Loader } from '@mantine/core';
 import { CodeHighlight } from '../file/code-highlight';
-
-type Range = [number, number];
-type Line = { line: string; number: number; ranges?: Range[] };
-type File = { path: string; uri?: string; range?: Range; lines?: Line[] };
-type SearchResponse = { files: File[]; truncated: boolean; hits: number };
-
-type HttpState = { loading: boolean; error?: Error; response?: SearchResponse };
+import type { File, Line } from '../store';
+import { useSearchContext } from '../store';
 
 function CodeLine({ line, path }: { line: Line; path: string }): ReactNode {
   const navigate = useNavigate();
@@ -36,9 +28,11 @@ function Hit({ file }: { file: File }): ReactNode {
       </div>
       {file.lines && (
         <table className="hit">
-          {file.lines.map((line) => (
-            <CodeLine key={line.number} line={line} path={file.path} />
-          ))}
+          <tbody>
+            {file.lines.map((line) => (
+              <CodeLine key={line.number} line={line} path={file.path} />
+            ))}
+          </tbody>
         </table>
       )}
     </div>
@@ -46,27 +40,18 @@ function Hit({ file }: { file: File }): ReactNode {
 }
 
 export function Search(): ReactNode {
-  const params = useSearchParams()[0].toString();
-  const [{ loading, error, response }, setHttp] = useState<HttpState>({
-    loading: true,
-  });
-  useLayoutEffect(() => {
-    if (params.length === 0) return;
-    Get<SearchResponse>(`/rest/search?${params}`)
-      .then((response) => setHttp({ loading: false, response }))
-      .catch((error) => setHttp({ loading: false, error }));
-  }, [params]);
+  const resultState = useSearchContext((ctx) => ctx.results);
+  if (resultState == null) return null;
 
-  if (params.length === 0) return null;
+  const { loading, error, results } = resultState;
   if (loading) return <Loader color="blue" />;
   if (error)
-    return (
-      <Alert variant="filled" color="red" title={error.message} m="xl"></Alert>
-    );
+    return <Alert variant="filled" color="red" title={error.message} m="xl" />;
+
   return (
     <div className="container">
-      {response!.files.map((file, i) => (
-        <Hit key={`${i} ${file.path}`} file={file} />
+      {results!.files.map((file) => (
+        <Hit key={`${file.path}:${file.range}`} file={file} />
       ))}
     </div>
   );

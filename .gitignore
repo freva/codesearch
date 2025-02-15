@@ -1,1 +1,6 @@
+.idea/
+
 cmd/cserver/static/static/repos.json
+config
+Makefile
+db/

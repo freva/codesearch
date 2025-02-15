@@ -1,9 +1,8 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode, RefObject } from 'react';
 import { useLayoutEffect } from 'react';
 import { Button, Checkbox, Divider, Group, Input, Text } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { getSearchUrl, useSearchQuery } from '../libs/use-search-query';
-import { useNavigate } from 'react-router-dom';
+import { ACTION, dispatch, useSearchContext } from '../pages/store';
 
 export interface GetInputPropsReturnType {
   onChange: any;
@@ -11,6 +10,7 @@ export interface GetInputPropsReturnType {
   checked?: any;
   onFocus?: any;
   onBlur?: any;
+  ref: RefObject<HTMLInputElement | null>;
 }
 
 function Shortcut({
@@ -33,34 +33,51 @@ function TextInput({
 }
 
 export function Header(): ReactNode {
-  const params = useSearchQuery();
-  const navigate = useNavigate();
-  const form = useForm({
-    initialValues: params,
-  });
+  const filters = useSearchContext((ctx) => ctx.filters);
+  const inputs = useSearchContext((ctx) => ctx.inputs);
+  const form = useForm({ initialValues: filters });
 
   useLayoutEffect(() => {
-    form.setValues(params);
-  }, Object.values(params));
+    form.setValues(filters);
+  }, Object.values(filters));
 
   return (
-    <form onSubmit={form.onSubmit((values) => navigate(getSearchUrl(values)))}>
+    <form
+      onSubmit={form.onSubmit((values) =>
+        dispatch([ACTION.SET_FILTERS, values]),
+      )}
+    >
       <Group justify="center" my="xs" gap="xs">
         <Text size="lg">Lines matching</Text>
         <Shortcut shortcut="q">
-          <TextInput width={300} {...form.getInputProps('q')} />
+          <TextInput
+            ref={inputs.query}
+            width={300}
+            {...form.getInputProps('query')}
+          />
         </Shortcut>
         <Text size="lg">in files matching</Text>
         <Shortcut shortcut="f">
-          <TextInput width={200} {...form.getInputProps('f')} />
+          <TextInput
+            ref={inputs.file}
+            width={200}
+            {...form.getInputProps('file')}
+          />
         </Shortcut>
         <Text size="lg">and not</Text>
         <Shortcut shortcut="x">
-          <TextInput width={200} {...form.getInputProps('x')} />
+          <TextInput
+            ref={inputs.excludeFile}
+            width={200}
+            {...form.getInputProps('excludeFile')}
+          />
         </Shortcut>
         <Text size="lg">case insensitive</Text>
         <Shortcut shortcut="i">
-          <Checkbox {...form.getInputProps('i')} />
+          <Checkbox
+            ref={inputs.caseInsensitive}
+            {...form.getInputProps('caseInsensitive')}
+          />
         </Shortcut>
         <Shortcut shortcut="s">
           <Button type="submit" size="xs">

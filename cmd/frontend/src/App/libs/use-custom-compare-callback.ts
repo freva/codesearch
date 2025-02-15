@@ -5,7 +5,7 @@ import { isEqual } from 'lodash';
 type Comparator = (a: DependencyList, b: DependencyList) => boolean;
 
 export function useCustomCompareMemoize<T>(deps: T, depsEqual = isEqual): T {
-  const ref = useRef<T | undefined>();
+  const ref = useRef<T | undefined>(undefined);
   if (!ref.current || !depsEqual(ref.current, deps)) ref.current = deps;
   return ref.current;
 }

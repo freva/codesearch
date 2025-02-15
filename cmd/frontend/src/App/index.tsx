@@ -9,17 +9,20 @@ import { ErrorBoundary } from './error-boundary';
 import { Search } from './pages/search';
 import { File } from './pages/file';
 import { Header } from './layout/header';
+import { SearchContextProvider } from './pages/store';
 
 export default function App(): ReactNode {
   return (
     <BrowserRouter>
       <MantineProvider theme={theme}>
         <ErrorBoundary>
-          <Header />
-          <Routes>
-            <Route path="/file/*" element={<File />} />
-            <Route path="*" element={<Search />} />
-          </Routes>
+          <SearchContextProvider>
+            <Header />
+            <Routes>
+              <Route path="/file/*" element={<File />} />
+              <Route path="*" element={<Search />} />
+            </Routes>
+          </SearchContextProvider>
         </ErrorBoundary>
       </MantineProvider>
     </BrowserRouter>

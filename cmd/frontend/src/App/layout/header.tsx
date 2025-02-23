@@ -1,17 +1,9 @@
-import type { PropsWithChildren, ReactNode, RefObject } from 'react';
-import { useLayoutEffect } from 'react';
+import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import { Button, Checkbox, Divider, Group, Input, Text } from '@mantine/core';
-import { useForm } from '@mantine/form';
+import type { Filters } from '../pages/store';
 import { ACTION, dispatch, useSearchContext } from '../pages/store';
-
-export interface GetInputPropsReturnType {
-  onChange: any;
-  value?: any;
-  checked?: any;
-  onFocus?: any;
-  onBlur?: any;
-  ref: RefObject<HTMLInputElement | null>;
-}
+import { Controller } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 
 function Shortcut({
   children,
@@ -26,57 +18,73 @@ function Shortcut({
 }
 
 function TextInput({
+  name,
+  control,
   width,
   ...props
-}: GetInputPropsReturnType & { width: number }): ReactNode {
-  return <Input size="xs" fz="lg" style={{ width }} {...props} />;
+}: {
+  name: keyof Omit<Filters, 'caseInsensitive'>;
+  control: Control<Filters>;
+  ta?: CSSProperties['textAlign'];
+  width: number;
+}): ReactNode {
+  return (
+    <Controller
+      render={({ field }) => (
+        <Input size="xs" fz="lg" style={{ width }} {...field} {...props} />
+      )}
+      {...{ name, control }}
+    />
+  );
 }
 
 export function Header(): ReactNode {
-  const filters = useSearchContext((ctx) => ctx.filters);
-  const inputs = useSearchContext((ctx) => ctx.inputs);
-  const form = useForm({ initialValues: filters });
-
-  useLayoutEffect(() => {
-    form.setValues(filters);
-  }, Object.values(filters));
+  const form = useSearchContext((ctx) => ctx.form);
 
   return (
     <form
-      onSubmit={form.onSubmit((values) =>
+      onSubmit={form.handleSubmit((values) =>
         dispatch([ACTION.SET_FILTERS, values]),
       )}
     >
       <Group justify="center" my="xs" gap="xs">
         <Text size="lg">Lines matching</Text>
         <Shortcut shortcut="q">
-          <TextInput
-            ref={inputs.query}
-            width={300}
-            {...form.getInputProps('query')}
-          />
+          <TextInput name="query" control={form.control} width={300} />
         </Shortcut>
         <Text size="lg">in files matching</Text>
         <Shortcut shortcut="f">
-          <TextInput
-            ref={inputs.file}
-            width={200}
-            {...form.getInputProps('file')}
-          />
+          <TextInput name="file" control={form.control} width={200} />
         </Shortcut>
         <Text size="lg">and not</Text>
         <Shortcut shortcut="x">
+          <TextInput name="excludeFile" control={form.control} width={200} />
+        </Shortcut>
+        <Text size="lg">context</Text>
+        <Shortcut shortcut="b">
           <TextInput
-            ref={inputs.excludeFile}
-            width={200}
-            {...form.getInputProps('excludeFile')}
+            name="numLinesBefore"
+            control={form.control}
+            width={40}
+            ta="right"
+          />
+        </Shortcut>
+        <Shortcut shortcut="a">
+          <TextInput
+            name="numLinesAfter"
+            control={form.control}
+            width={40}
+            ta="right"
           />
         </Shortcut>
         <Text size="lg">case insensitive</Text>
         <Shortcut shortcut="i">
-          <Checkbox
-            ref={inputs.caseInsensitive}
-            {...form.getInputProps('caseInsensitive')}
+          <Controller
+            name="caseInsensitive"
+            control={form.control}
+            render={({ field: { value, ...rest } }) => (
+              <Checkbox checked={value} {...rest} />
+            )}
           />
         </Shortcut>
         <Shortcut shortcut="s">

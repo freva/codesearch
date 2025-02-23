@@ -1,13 +1,13 @@
 import type { Context, Dispatch, PropsWithChildren, ReactNode } from 'react';
-import { createRef } from 'react';
 import { useLayoutEffect, useReducer, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createContext, useContextSelector } from 'use-context-selector';
 import { ACTION } from '.';
-import type { ActionData, State, SearchResult } from '.';
+import type { ActionData, State, SearchResult, Filters } from '.';
 import { reducer } from './reducer';
 import { parseUrlParams, createUrlParams } from './url-params';
 import { Get } from '../../libs/fetcher';
+import { useForm } from 'react-hook-form';
 
 let searchContextDispatchRef: Dispatch<ActionData> | undefined;
 const context = createContext<State | undefined>(undefined);
@@ -17,16 +17,14 @@ export function SearchContextProvider({
 }: PropsWithChildren): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
+  const form = useForm<Filters>({
+    defaultValues: parseUrlParams(location.search),
+  });
   const queryRef = useRef<string | undefined>(undefined);
 
   const [value, searchContextDispatch] = useReducer(reducer, {
     filters: parseUrlParams(location.search),
-    inputs: {
-      query: createRef<HTMLInputElement>(),
-      file: createRef<HTMLInputElement>(),
-      excludeFile: createRef<HTMLInputElement>(),
-      caseInsensitive: createRef<HTMLInputElement>(),
-    },
+    form,
   });
 
   useLayoutEffect(() => {
@@ -37,12 +35,15 @@ export function SearchContextProvider({
   // Every time the URL changes, update the state
   useLayoutEffect(() => {
     if (location.pathname !== '/') return;
-    dispatch([ACTION.SET_FILTERS, parseUrlParams(location.search)]);
+    const filters = parseUrlParams(location.search);
+    dispatch([ACTION.SET_FILTERS, filters]);
+    form.reset(filters);
   }, [location.search]);
 
   // Every time the filters change, update the URL
   useLayoutEffect(() => {
     if (window.location.pathname !== '/') return;
+    if (value.filters.query === '' && value.filters.file === '') return;
     const queryParams = createUrlParams(value.filters);
     if (queryRef.current === queryParams) return;
     queryRef.current = queryParams;

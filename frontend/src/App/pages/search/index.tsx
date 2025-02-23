@@ -5,7 +5,17 @@ import { CodeHighlight } from '../file/code-highlight';
 import type { File, Line } from '../store';
 import { useSearchContext } from '../store';
 
-function CodeLine({ line, path }: { line: Line; path: string }): ReactNode {
+function CodeLine({
+  line,
+  path,
+  blockStart,
+  blockEnd,
+}: {
+  line: Line;
+  path: string;
+  blockStart: boolean;
+  blockEnd: boolean;
+}): ReactNode {
   const navigate = useNavigate();
   const link = `/file/${path}${window.location.search}#L${line.number}`;
   return (
@@ -13,7 +23,10 @@ function CodeLine({ line, path }: { line: Line; path: string }): ReactNode {
       <td>
         <Link to={link}>{line.number}.</Link>
       </td>
-      <td onClick={() => navigate(link)}>
+      <td
+        onClick={() => navigate(link)}
+        className={`block ${blockStart ? 'block-start' : ''} ${blockEnd ? 'block-end' : ''}`}
+      >
         <CodeHighlight path={path} code={line.line} />
       </td>
     </tr>
@@ -29,8 +42,14 @@ function Hit({ file }: { file: File }): ReactNode {
       {file.lines && (
         <table className="hit">
           <tbody>
-            {file.lines.map((line) => (
-              <CodeLine key={line.number} line={line} path={file.path} />
+            {file.lines.map((line, i, arr) => (
+              <CodeLine
+                key={line.number}
+                line={line}
+                path={file.path}
+                blockStart={arr[i - 1]?.number < line.number - 1}
+                blockEnd={arr[i + 1]?.number > line.number + 1}
+              />
             ))}
           </tbody>
         </table>

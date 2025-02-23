@@ -76,8 +76,8 @@ func JsStringLiteral(text string) string {
 	return literal + "'"
 }
 
-func RemovePathPrefix(path string) string {
-	return strings.TrimPrefix(path, *sFlag)
+func RemovePathPrefix(path index.Path) string {
+	return strings.TrimPrefix(path.String(), *sFlag)
 }
 
 func uri_encode(name string, value string) string {
@@ -367,11 +367,11 @@ func Search(writer http.ResponseWriter, request *http.Request, query string,
 
 	ix := index.Open(INDEX_PATH)
 	ix.Verbose = false
-	var post []uint32 = ix.PostingQuery(q)
+	var post []int = ix.PostingQuery(q)
 
 	if fre != nil {
 		// Retain only those files matching the file pattern.
-		fnames := make([]uint32, 0, len(post))
+		fnames := make([]int, 0, len(post))
 
 		for _, fileid := range post {
 			full_path := ix.Name(fileid)
@@ -387,7 +387,7 @@ func Search(writer http.ResponseWriter, request *http.Request, query string,
 
 	if xfre != nil {
 		// Remove those files matching the exclude file pattern.
-		fnames := make([]uint32, 0, len(post))
+		fnames := make([]int, 0, len(post))
 
 		for _, fileid := range post {
 			full_path := ix.Name(fileid)
@@ -426,7 +426,7 @@ func Search(writer http.ResponseWriter, request *http.Request, query string,
 				Regexp: re,
 				Stderr: os.Stderr,
 			}
-			grep.File2(name)
+			grep.File2(name.String())
 
 			if len(grep.MatchedLines) > 0 {
 				short_name := RemovePathPrefix(name)
@@ -511,7 +511,7 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 	// TODO: Fix this path
 	idx := index.Open(*fFlag)
 	idx.Verbose = false
-	var post []uint32 = idx.PostingQuery(query)
+	var post []int = idx.PostingQuery(query)
 
 	pretty_query := pretty_print_query2(file_filter, exclude_file_filter,
 		max_hits, ignore_case)
@@ -535,7 +535,7 @@ func SearchFile(writer http.ResponseWriter, request *http.Request,
 		// of the files and matching (AFAIK), so there's only a
 		// benefit if we don't traverse through all files: Split
 		// up the list of paths in many.  Too many => I/O bound.
-		grep.File2(manifest)
+		grep.File2(manifest.String())
 
 		for _, hit := range grep.MatchedLines {
 			if num_hits >= max_hits+10 {

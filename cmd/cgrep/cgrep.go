@@ -14,12 +14,12 @@ import (
 	"github.com/hakonhall/codesearch/regexp"
 )
 
-var usageMessage = `usage: cgrep [-c] [-h] [-i] [-l] [-n] regexp [file...]
+var usageMessage = `usage: cgrep [-c] [-h] [-i] [-l] [-n] [-v] regexp [file...]
 
 Cgrep behaves like grep, searching for regexp, an RE2 (nearly PCRE) regular expression.
 
-The -c, -h, -i, -l, and -n flags are as in grep, although note that as per Go's
-flag parsing convention, they cannot be combined: the option pair -i -n 
+The -c, -h, -i, -l, -n, and -v flags are as in grep, although note that as per Go's
+flag parsing convention, they cannot be combined: the option pair -i -n
 cannot be abbreviated to -in.
 `
 
@@ -34,8 +34,10 @@ var (
 )
 
 func main() {
+	log.SetPrefix("cgrep: ")
 	var g regexp.Grep
 	g.AddFlags()
+	g.AddVFlag()
 	g.Stdout = os.Stdout
 	g.Stderr = os.Stderr
 	flag.Usage = usage

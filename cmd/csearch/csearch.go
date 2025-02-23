@@ -5,11 +5,14 @@
 package main
 
 import (
+	"archive/zip"
+	"bytes"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"runtime/pprof"
+	"strings"
 
 	"github.com/hakonhall/codesearch/index"
 	"github.com/hakonhall/codesearch/regexp"
@@ -21,7 +24,7 @@ Csearch behaves like grep over all indexed files, searching for regexp,
 an RE2 (nearly PCRE) regular expression.
 
 The -c, -h, -i, -l, and -n flags are as in grep, although note that as per Go's
-flag parsing convention, they cannot be combined: the option pair -i -n 
+flag parsing convention, they cannot be combined: the option pair -i -n
 cannot be abbreviated to -in.
 
 The -f flag restricts the search to files whose names match the RE2 regular
@@ -49,6 +52,7 @@ var (
 	fFlag       = flag.String("f", "", "search only files with names matching this regexp")
 	iFlag       = flag.Bool("i", false, "case-insensitive search")
 	indexFlag   = flag.String("index", "", "path to index file")
+	htmlFlag    = flag.Bool("html", false, "print HTML output")
 	verboseFlag = flag.Bool("verbose", false, "print extra information")
 	bruteFlag   = flag.Bool("brute", false, "brute force - search all files in index")
 	cpuProfile  = flag.String("cpuprofile", "", "write cpu profile to this file")
@@ -57,6 +61,7 @@ var (
 )
 
 func Main() {
+	log.SetPrefix("csearch: ")
 	g := regexp.Grep{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -65,6 +70,9 @@ func Main() {
 
 	flag.Usage = usage
 	flag.Parse()
+	if *htmlFlag {
+		g.HTML = true
+	}
 	args := flag.Args()
 
 	if len(args) != 1 {
@@ -104,7 +112,7 @@ func Main() {
 
 	ix := index.Open(index.File(*indexFlag))
 	ix.Verbose = *verboseFlag
-	var post []uint32
+	var post []int
 	if *bruteFlag {
 		post = ix.PostingQuery(&index.Query{Op: index.QAll})
 	} else {
@@ -115,11 +123,11 @@ func Main() {
 	}
 
 	if fre != nil {
-		fnames := make([]uint32, 0, len(post))
+		fnames := make([]int, 0, len(post))
 
 		for _, fileid := range post {
 			name := ix.Name(fileid)
-			if fre.MatchString(name, true, true) < 0 {
+			if fre.MatchString(name.String(), true, true) < 0 {
 				continue
 			}
 			fnames = append(fnames, fileid)
@@ -131,9 +139,54 @@ func Main() {
 		post = fnames
 	}
 
+	var (
+		zipFile   string
+		zipReader *zip.ReadCloser
+		zipMap    map[string]*zip.File
+	)
+
 	for _, fileid := range post {
-		name := ix.Name(fileid)
-		g.File(name)
+		name := ix.Name(fileid).String()
+		if g.L && (pat == "(?m)" || pat == "(?i)(?m)") {
+			g.Reader(bytes.NewReader(nil), name)
+			continue
+		}
+		file, err := os.Open(string(name))
+		if err != nil {
+			if i := strings.Index(name, ".zip\x01"); i >= 0 {
+				zfile, zname := name[:i+4], name[i+5:]
+				if zfile != zipFile {
+					if zipReader != nil {
+						zipReader.Close()
+						zipMap = nil
+					}
+					zipFile = zfile
+					zipReader, err = zip.OpenReader(zfile)
+					if err != nil {
+						zipReader = nil
+					}
+					if zipReader != nil {
+						zipMap = make(map[string]*zip.File)
+						for _, file := range zipReader.File {
+							zipMap[file.Name] = file
+						}
+					}
+				}
+				file := zipMap[zname]
+				if file != nil {
+					r, err := file.Open()
+					if err != nil {
+						continue
+					}
+					g.Reader(r, name)
+					r.Close()
+					continue
+				}
+			}
+			continue
+		}
+		g.Reader(file, name)
+		file.Close()
 	}
 
 	matches = g.Match

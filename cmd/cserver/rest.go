@@ -185,7 +185,7 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 			Regexp: queryRe,
 			Stderr: os.Stderr,
 		}
-		grep.File2(fullPath)
+		grep.File2(fullPath.String())
 
 		if len(grep.MatchedLines) == 0 {
 			continue
@@ -290,7 +290,7 @@ func searchFile(w http.ResponseWriter, fileFilter string, excludeFileFilter stri
 		// of the files and matching (AFAIK), so there's only a
 		// benefit if we don't traverse through all files: Split
 		// up the list of paths in many.  Too many => I/O bound.
-		grep.File2(manifest)
+		grep.File2(manifest.String())
 
 		for _, hit := range grep.MatchedLines {
 			path := hit.Line

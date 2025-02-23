@@ -11,12 +11,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/pprof"
-	"sort"
+	"slices"
 
 	"github.com/hakonhall/codesearch/index"
 )
 
-var usageMessage = `usage: cindex [-index file] [-list] [-reset] [-force] [path...]
+var usageMessage = `usage: cindex [-index file] [-list] [-reset] [-zip] [-force] [path...]
 
 Cindex prepares the trigram index for use by csearch.  The index is the
 file named by -index, or else $CSEARCHINDEX, or else $HOME/.csearchindex.
@@ -41,7 +41,11 @@ itself is a useful command to run in a nightly cron job.
 
 The -list flag causes cindex to list the paths it has indexed and exit.
 
-By default cindex adds the named paths to the index but preserves 
+The -zip flag causes cindex to index content inside ZIP files.
+This feature is experimental and will almost certainly change
+in the future, possibly in incompatible ways.
+
+By default cindex adds the named paths to the index but preserves
 information about other paths that might already be indexed
 (the ones printed by cindex -list).  The -reset flag causes cindex to
 delete the existing index before indexing the new paths.
@@ -64,19 +68,27 @@ var (
 	logSkipFlag = flag.Bool("log", false, "print extra information")
 	cpuProfile  = flag.String("cpuprofile", "", "write cpu profile to this file")
 	forceFlag   = flag.Bool("force", false, "force addition to index")
+	checkFlag   = flag.Bool("check", false, "check index is well-formatted")
+	zipFlag     = flag.Bool("zip", false, "index content in zip files")
+	statsFlag   = flag.Bool("stats", false, "print index size statistics")
 )
 
 func main() {
+	log.SetPrefix("cindex: ")
 	flag.Usage = usage
 	flag.Parse()
-	args := flag.Args()
 
 	indexpath := index.File(*indexFlag)
 
 	if *listFlag {
 		ix := index.Open(index.File(indexpath))
-		for _, arg := range ix.Paths() {
-			fmt.Printf("%s\n", arg)
+		if *checkFlag {
+			if err := ix.Check(); err != nil {
+				log.Fatal(err)
+			}
+		}
+		for p := range ix.Roots().All() {
+			fmt.Printf("%s\n", p)
 		}
 		return
 	}
@@ -91,32 +103,26 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if *resetFlag && len(args) == 0 {
+	if *resetFlag && flag.NArg() == 0 {
 		os.Remove(index.File(indexpath))
 		return
 	}
-	if len(args) == 0 {
+	var roots []index.Path
+	if flag.NArg() == 0 {
 		ix := index.Open(index.File(indexpath))
-		for _, arg := range ix.Paths() {
-			args = append(args, arg)
+		roots = slices.Collect(ix.Roots().All())
+	} else {
+		// Translate arguments to absolute paths so that
+		// we can generate the file list in sorted order.
+		for _, arg := range flag.Args() {
+			a, err := filepath.Abs(arg)
+			if err != nil {
+				log.Printf("%s: %s", arg, err)
+				continue
+			}
+			roots = append(roots, index.MakePath(a))
 		}
-	}
-
-	// Translate paths to absolute paths so that we can
-	// generate the file list in sorted order.
-	for i, arg := range args {
-		a, err := filepath.Abs(arg)
-		if err != nil {
-			log.Printf("%s: %s", arg, err)
-			args[i] = ""
-			continue
-		}
-		args[i] = a
-	}
-	sort.Strings(args)
-
-	for len(args) > 0 && args[0] == "" {
-		args = args[1:]
+		slices.SortFunc(roots, index.Path.Compare)
 	}
 
 	master := index.File(indexpath)
@@ -127,15 +133,22 @@ func main() {
 	file := master
 	if !*resetFlag {
 		file += "~"
+		if *checkFlag {
+			ix := index.Open(master)
+			if err := ix.Check(); err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 
 	ix := index.Create(file)
 	ix.Force = *forceFlag
 	ix.Verbose = *verboseFlag
-	ix.AddPaths(args)
-	for _, arg := range args {
-		log.Printf("index %s", arg)
-		filepath.Walk(arg, func(path string, info os.FileInfo, err error) error {
+	ix.Zip = *zipFlag
+	ix.AddRoots(roots)
+	for _, root := range roots {
+		log.Printf("index %s", root)
+		filepath.Walk(root.String(), func(path string, info os.FileInfo, err error) error {
 			if _, elem := filepath.Split(path); elem != "" {
 				// Skip various temporary or "hidden" files or directories.
 				if elem == ".git" || elem[0] == '#' || elem[0] == '~' || elem[len(elem)-1] == '~' {
@@ -150,7 +163,10 @@ func main() {
 				return nil
 			}
 			if info != nil && info.Mode()&os.ModeType == 0 {
-				ix.AddFile(path)
+				if err := ix.AddFile(path); err != nil {
+					log.Printf("%s: %s", path, err)
+					return nil
+				}
 			}
 			return nil
 		})
@@ -161,9 +177,28 @@ func main() {
 	if !*resetFlag {
 		log.Printf("merge %s %s", master, file)
 		index.Merge(file+"~", master, file)
+		if *checkFlag {
+			ix := index.Open(file + "~")
+			if err := ix.Check(); err != nil {
+				log.Fatal(err)
+			}
+		}
 		os.Remove(file)
 		os.Rename(file+"~", master)
+	} else {
+		if *checkFlag {
+			ix := index.Open(file)
+			if err := ix.Check(); err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
+
 	log.Printf("done")
+
+	if *statsFlag {
+		ix := index.Open(master)
+		ix.PrintStats()
+	}
 	return
 }

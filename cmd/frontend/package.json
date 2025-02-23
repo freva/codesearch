@@ -36,6 +36,7 @@
     "eslint-plugin-prettier": "^5",
     "eslint-plugin-react": "^7",
     "globals": "^15",
+    "happy-dom": "^17",
     "postcss": "^8",
     "postcss-preset-mantine": "^1",
     "postcss-simple-vars": "^7",

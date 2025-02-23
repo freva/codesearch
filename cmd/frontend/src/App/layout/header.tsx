@@ -30,8 +30,15 @@ function TextInput({
 }): ReactNode {
   return (
     <Controller
-      render={({ field }) => (
-        <Input size="xs" fz="lg" style={{ width }} {...field} {...props} />
+      render={({ field: { ref, ...field } }) => (
+        <Input
+          ref={(r) => ref(r)}
+          size="xs"
+          fz="lg"
+          style={{ width }}
+          {...field}
+          {...props}
+        />
       )}
       {...{ name, control }}
     />

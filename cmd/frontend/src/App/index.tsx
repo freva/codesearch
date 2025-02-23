@@ -10,6 +10,7 @@ import { Search } from './pages/search';
 import { File } from './pages/file';
 import { Header } from './layout/header';
 import { SearchContextProvider } from './pages/store';
+import { KeyboardShortcuts } from './pages/keyboard/keyboard-shortcuts';
 
 export default function App(): ReactNode {
   return (
@@ -17,6 +18,7 @@ export default function App(): ReactNode {
       <MantineProvider theme={theme}>
         <ErrorBoundary>
           <SearchContextProvider>
+            <KeyboardShortcuts />
             <Header />
             <Routes>
               <Route path="/file/*" element={<File />} />

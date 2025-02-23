@@ -29,6 +29,24 @@ a {
 
 table.hit {
     width: 100%;
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+table.hit td.block {
+    padding: 0;
+}
+
+table.hit td.block {
+    border-left: 1px solid #888;
+    border-right: 1px solid #888;
+}
+table.hit td.block-start {
+    margin-top: 2px;
+    border-top: 1px solid #888;
+}
+table.hit td.block-end {
+    margin-bottom: 2px;
+    border-bottom: 1px solid #888;
 }
 
 table.hit td:first-child {
@@ -45,7 +63,6 @@ table.hit td:first-child a {
 table.hit pre {
     padding: 2px;
     margin: 0;
-    border: 1px solid #888;
     line-height: normal;
     cursor: pointer;
 }

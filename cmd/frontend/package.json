@@ -12,12 +12,12 @@
   },
   "dependencies": {
     "@mantine/core": "^7",
-    "@mantine/form": "^7",
     "@mantine/hooks": "^7",
     "dayjs": "^1",
     "lodash": "^4",
     "react": "^19",
     "react-dom": "^19",
+    "react-hook-form": "^7",
     "react-router-dom": "^7",
     "shiki": "^2",
     "use-context-selector": "^2"

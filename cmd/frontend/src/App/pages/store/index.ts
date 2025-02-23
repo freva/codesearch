@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { UseFormReturn } from 'react-hook-form';
 
 // Without setting a string value the reducer fails with https://github.com/microsoft/TypeScript/issues/28102 :(
 export enum ACTION {
@@ -40,7 +40,7 @@ type SearchResultState = {
 
 export type State = {
   filters: Filters;
-  inputs: Record<keyof Filters, RefObject<HTMLInputElement | null>>;
+  form: UseFormReturn<Filters>;
   results?: SearchResultState;
 };
 
@@ -49,6 +49,8 @@ export type Filters = {
   file: string;
   excludeFile: string;
   caseInsensitive: boolean;
+  numLinesBefore: number;
+  numLinesAfter: number;
 };
 
 export type ActionData =

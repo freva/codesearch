@@ -35,7 +35,7 @@ export function createUrlParams({
   if (query) params.set(qpQuery, query);
   if (file) params.set(qpFile, file);
   if (excludeFile) params.set(qpExcludeFile, excludeFile);
-  if (caseInsensitive) params.set(qpFile, 'true');
+  if (caseInsensitive) params.set(qpCaseInsensitive, 'true');
   if (numLinesBefore !== 0)
     params.set(qpNumBeforeLines, numLinesBefore.toString(10));
   if (numLinesAfter !== 0)

@@ -11,6 +11,7 @@ import (
 	stdregexp "regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -40,6 +41,20 @@ func escapeJsonString(str string) string {
 		}
 	}
 	return result
+}
+
+func indexUpdatedAt() time.Time {
+	data, err := os.ReadFile(*tFlag)
+	if err != nil {
+		log.Printf("Failed to read timestamp file: %w", err)
+		return time.Unix(0, 0)
+	}
+	t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(data)))
+	if err != nil {
+		log.Printf("Failed to parse timestamp ('%s') in timestamp file: %w", data, err)
+		return time.Unix(0, 0)
+	}
+	return t
 }
 
 func setHeaders(w http.ResponseWriter) {
@@ -101,7 +116,7 @@ func writeJsonFileHeader(w http.ResponseWriter, path string, pathRegex *stdregex
 	return nil
 }
 
-func search(w http.ResponseWriter, query string, fileFilter string, excludeFileFilter string, maxHits int, ignoreCase bool) error {
+func search(w http.ResponseWriter, query string, fileFilter string, excludeFileFilter string, maxHits int, ignoreCase bool, beforeLines int, afterLines int) error {
 	// (?m) => ^ and $ match beginning and end of line, respectively
 	queryPattern := "(?m)" + query
 	if ignoreCase {
@@ -185,57 +200,58 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 			}
 		}
 
-		grep := regexp.Grep{
-			Regexp: queryRe,
-			Stderr: os.Stderr,
-		}
-		grep.File2(fullPath)
-
-		if len(grep.MatchedLines) == 0 {
-			continue
-		}
-
-		if err := maybeWriteComma(w, numHits > 0); err != nil {
-			return err
-		}
-		if err := writeJsonFileHeader(w, path, fileStdRe); err != nil {
-			return err
-		}
-		if _, err := w.Write([]byte(",\"lines\":[")); err != nil {
-			return err
-		}
-
-		for i, hit := range grep.MatchedLines {
-			if err := maybeWriteComma(w, i > 0); err != nil {
-				return err
+		isFirstHit := true
+		for hit := range regexp.FindMatches(fullPath, queryRe, beforeLines, afterLines) {
+			if isFirstHit {
+				if err := maybeWriteComma(w, numHits > 0); err != nil {
+					return err
+				}
+				if err := writeJsonFileHeader(w, path, fileStdRe); err != nil {
+					return err
+				}
+				if _, err := w.Write([]byte(",\"lines\":[")); err != nil {
+					return err
+				}
+				isFirstHit = false
+			} else {
+				if err := maybeWriteComma(w, true); err != nil {
+					return err
+				}
 			}
-			escapedLine := escapeJsonString(strings.TrimRight(hit.Line, "\n"))
+
+			escapedLine := escapeJsonString(strings.TrimSuffix(hit.Line, "\n"))
 			if _, err := w.Write([]byte(fmt.Sprintf("{\"line\":\"%s\"", escapedLine))); err != nil {
 				return err
 			}
 
 			lineMeta := fmt.Sprintf(",\"number\":%d", hit.Lineno)
-			matches := queryStdRe.FindStringSubmatchIndex(hit.Line)
-			if matches != nil {
-				lineMeta += fmt.Sprintf(",\"range\":[%d,%d]}", matches[0], matches[1])
+			if hit.Match {
+				matches := queryStdRe.FindStringSubmatchIndex(hit.Line)
+				if matches != nil {
+					lineMeta += fmt.Sprintf(",\"range\":[%d,%d]", matches[0], matches[1])
+				}
+
+				numHits += 1
 			}
-			if _, err := w.Write([]byte(lineMeta)); err != nil {
+			if _, err := w.Write([]byte(lineMeta + "}")); err != nil {
 				return err
 			}
 
-			numHits += 1
 			if numHits >= maxHits+20 {
 				truncated = true
 				break
 			}
 		}
 
-		if _, err := w.Write([]byte("]}")); err != nil {
-			return err
+		if !isFirstHit {
+			if _, err := w.Write([]byte("]}")); err != nil {
+				return err
+			}
 		}
 	}
 
-	_, err = w.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"truncated\":%t}", numHits, truncated)))
+	updatedAt := indexUpdatedAt()
+	_, err = w.Write([]byte(fmt.Sprintf("],\"matchedFiles\":%d,\"updatedAt\":%d,\"truncated\":%t}", len(post), updatedAt.Unix(), truncated)))
 	return err
 }
 
@@ -338,12 +354,29 @@ func RestSearchHandler(w http.ResponseWriter, r *http.Request) {
 		fileFilter := r.Form.Get("f")
 		excludeFileFilter := r.Form.Get("xf")
 		ignoreCase := r.Form.Get("i") != ""
-		maxHitsString := r.Form.Get("n")
-		maxHits, err := strconv.Atoi(maxHitsString)
+
+		parseNumber := func(param string, defaultValue int) (int, error) {
+			paramValue := r.Form.Get(param)
+			if paramValue == "" {
+				return defaultValue, nil
+			}
+			value, err := strconv.Atoi(paramValue)
+			if err != nil || value < 0 {
+				return -1, fmt.Errorf("Invalid non-negative number for parameter '%s', got '%s'", param, paramValue)
+			}
+			return value, nil
+		}
+		before, err := parseNumber("b", 0)
 		if err != nil {
-			maxHits = defaultMaxHits
-		} else if maxHits > 1000 {
-			maxHits = 1000
+			return err
+		}
+		after, err := parseNumber("a", 0)
+		if err != nil {
+			return err
+		}
+		maxHits, err := parseNumber("n", 100)
+		if err != nil {
+			return err
 		}
 
 		if query == "" && fileFilter == "" {
@@ -351,7 +384,7 @@ func RestSearchHandler(w http.ResponseWriter, r *http.Request) {
 		} else if query == "" {
 			return searchFile(w, fileFilter, excludeFileFilter, maxHits, ignoreCase)
 		} else {
-			return search(w, query, fileFilter, excludeFileFilter, maxHits, ignoreCase)
+			return search(w, query, fileFilter, excludeFileFilter, maxHits, ignoreCase, before, after)
 		}
 	})
 }

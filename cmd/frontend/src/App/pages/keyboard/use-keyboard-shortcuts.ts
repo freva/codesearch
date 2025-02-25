@@ -28,6 +28,11 @@ export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {
       ['a', (): void => form.setFocus('numLinesAfter')],
       ['s', (): void => dispatch([ACTION.SET_FILTERS, form.getValues()])],
       ['?', (): void => setOpen((open) => !open)],
+
+      ['k', (): void => dispatch([ACTION.SELECT_PREVIOUS])],
+      [['ArrowUp'], (): void => dispatch([ACTION.SELECT_PREVIOUS])],
+      ['j', (): void => dispatch([ACTION.SELECT_NEXT])],
+      [['ArrowDown'], (): void => dispatch([ACTION.SELECT_NEXT])],
     ];
 
     binds.forEach(([sequence, callback]) => listener.bind(sequence, callback));

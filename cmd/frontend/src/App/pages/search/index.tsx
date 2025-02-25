@@ -18,8 +18,13 @@ function CodeLine({
 }): ReactNode {
   const navigate = useNavigate();
   const link = `/file/${path}${window.location.search}#L${line.number}`;
+  const isSelected = useSearchContext(
+    (ctx) =>
+      ctx.selectedHit?.path === path && ctx.selectedHit.line === line.number,
+  );
+
   return (
-    <tr>
+    <tr className={isSelected ? 'selected' : ''}>
       <td>
         <Link to={link}>{line.number}.</Link>
       </td>

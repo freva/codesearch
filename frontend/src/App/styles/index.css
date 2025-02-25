@@ -32,6 +32,9 @@ table.hit {
     border-spacing: 0;
     border-collapse: collapse;
 }
+table.hit tr.selected {
+    border: 1px dashed #000;
+}
 table.hit td.block {
     padding: 0;
 }

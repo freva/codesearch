@@ -94,6 +94,13 @@ export function KeyboardShortcuts(): ReactNode {
             ]}
           />
         </Columns>
+          <Column
+            header="Navigation"
+            keys={[
+              shortcut(['k', '▲'], 'Select hit above', ' or '),
+              shortcut(['j', '▼'], 'Select hit below', ' or '),
+            ]}
+          />
       </Stack>
     </Modal>
   );

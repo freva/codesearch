@@ -3,6 +3,8 @@ import type { UseFormReturn } from 'react-hook-form';
 // Without setting a string value the reducer fails with https://github.com/microsoft/TypeScript/issues/28102 :(
 export enum ACTION {
   SET_FILTERS = 'SET_FILTERS',
+  SET_SELECTED_HIT = 'SET_SELECTED_HIT',
+  SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS',
 
   SELECT_QUERY_INPUT = 'SELECT_QUERY_INPUT',
   SELECT_FILE_INPUT = 'SELECT_FILE_INPUT',
@@ -11,16 +13,10 @@ export enum ACTION {
 
   SELECT_PREVIOUS = 'SELECT_PREVIOUS',
   SELECT_NEXT = 'SELECT_NEXT',
-  SELECT_PREVIOUS_PAGE = 'SELECT_PREVIOUS_PAGE',
-  SELECT_NEXT_PAGE = 'SELECT_NEXT_PAGE',
-  SELECT_FIRST = 'SELECT_FIRST',
-  SELECT_LAST = 'SELECT_LAST',
-
-  SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS',
 }
 
 export type Range = [number, number];
-export type Line = { line: string; number: number; ranges?: Range[] };
+export type Line = { line: string; number: number; range?: Range[] };
 export type File = {
   path: string;
   uri?: string;
@@ -42,6 +38,12 @@ export type State = {
   filters: Filters;
   form: UseFormReturn<Filters>;
   results?: SearchResultState;
+  selectedHit?: SelectedHit;
+};
+
+export type SelectedHit = {
+  path: string;
+  line: number;
 };
 
 export type Filters = {
@@ -61,12 +63,9 @@ export type ActionData =
       | ACTION.SELECT_EXCLUDE_FILE_INPUT
       | ACTION.TOGGLE_CASE_INSENSITIVE
       | ACTION.SELECT_PREVIOUS
-      | ACTION.SELECT_NEXT
-      | ACTION.SELECT_PREVIOUS_PAGE
-      | ACTION.SELECT_NEXT_PAGE
-      | ACTION.SELECT_FIRST
-      | ACTION.SELECT_LAST,
+      | ACTION.SELECT_NEXT,
     ]
+  | [ACTION.SET_SELECTED_HIT, SelectedHit]
   | [ACTION.SET_SEARCH_RESULTS, SearchResultState];
 
 export { SearchContextProvider, useSearchContext, dispatch } from './provider';

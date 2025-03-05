@@ -3,7 +3,7 @@ import { Fragment } from 'react';
 import type { SimpleGridProps } from '@mantine/core';
 import { Box, Kbd, Modal, Stack, Text } from '@mantine/core';
 import classNames from './keyboard-shortcuts.module.css';
-import { useKeyboardShortcuts } from './use-keyboard-shortcuts.ts';
+import { URL_GENERATORS, useKeyboardShortcuts } from './use-keyboard-shortcuts.ts';
 
 type KeyDescription = {
   keys: string[];
@@ -93,14 +93,26 @@ export function KeyboardShortcuts(): ReactNode {
               shortcut('s', 'Search'),
             ]}
           />
+          <Stack>
+            <Column
+              header="Navigation"
+              keys={[
+                shortcut(['k', '▲'], 'Select hit above', ' or '),
+                shortcut(['j', '▼'], 'Select hit below', ' or '),
+              ]}
+            />
+            <Column
+              header="Open..."
+              keys={URL_GENERATORS.map(({ key, name }) =>
+                shortcut(
+                  [key, key.toUpperCase()],
+                  `${name} in this / new window`,
+                  ' / ',
+                ),
+              )}
+            />
+          </Stack>
         </Columns>
-          <Column
-            header="Navigation"
-            keys={[
-              shortcut(['k', '▲'], 'Select hit above', ' or '),
-              shortcut(['j', '▼'], 'Select hit below', ' or '),
-            ]}
-          />
       </Stack>
     </Modal>
   );

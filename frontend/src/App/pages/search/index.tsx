@@ -7,20 +7,24 @@ import { useSearchContext } from '../store';
 
 function CodeLine({
   line,
+  directory,
   path,
   blockStart,
   blockEnd,
 }: {
   line: Line;
+  directory: string;
   path: string;
   blockStart: boolean;
   blockEnd: boolean;
 }): ReactNode {
   const navigate = useNavigate();
-  const link = `/file/${path}${window.location.search}#L${line.number}`;
+  const link = `/file/${directory}/${path}${window.location.search}#L${line.number}`;
   const isSelected = useSearchContext(
     (ctx) =>
-      ctx.selectedHit?.path === path && ctx.selectedHit.line === line.number,
+      ctx.selectedHit?.path === path &&
+      ctx.selectedHit.directory == directory &&
+      ctx.selectedHit.line === line.number,
   );
 
   return (
@@ -32,7 +36,11 @@ function CodeLine({
         onClick={() => navigate(link)}
         className={`block ${blockStart ? 'block-start' : ''} ${blockEnd ? 'block-end' : ''}`}
       >
-        <CodeHighlight path={path} code={line.line} />
+        <CodeHighlight
+          path={path}
+          code={line.line}
+          ranges={line.range ? [{ line: 1, range: line.range }] : undefined}
+        />
       </td>
     </tr>
   );
@@ -42,7 +50,9 @@ function Hit({ file }: { file: File }): ReactNode {
   return (
     <div>
       <div>
-        <Link to={`/file/${file.path}`}>{file.path}</Link>
+        <Link to={`/file/${file.directory}/${file.path}`}>
+          {file.directory}/{file.path}
+        </Link>
       </div>
       {file.lines && (
         <table className="hit">
@@ -51,6 +61,7 @@ function Hit({ file }: { file: File }): ReactNode {
               <CodeLine
                 key={line.number}
                 line={line}
+                directory={file.directory}
                 path={file.path}
                 blockStart={arr[i - 1]?.number < line.number - 1}
                 blockEnd={arr[i + 1]?.number > line.number + 1}

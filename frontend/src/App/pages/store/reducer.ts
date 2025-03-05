@@ -5,7 +5,14 @@ import { isEqual } from 'lodash';
 function* hitIterator(files: File[]): Generator<SelectedHit> {
   for (let file of files) {
     for (let line of file.lines ?? []) {
-      if (line.range != null) yield { path: file.path, line: line.number };
+      if (line.range != null)
+        yield {
+          path: file.path,
+          directory: file.directory,
+          repository: file.repository,
+          branch: file.branch,
+          line: line.number,
+        };
     }
   }
 }
@@ -26,7 +33,11 @@ function selectNode(state: State, down: boolean): State {
   let stopAtNext = false;
   for (let hit of hitIterator(files)) {
     if (select == null) select = prevHit = hit;
-    if (hit.path === selected.path && hit.line === selected.line) {
+    if (
+      hit.path === selected.path &&
+      hit.directory == selected.directory &&
+      hit.line === selected.line
+    ) {
       if (!down) {
         select = prevHit;
         break;
@@ -66,6 +77,9 @@ function _preReducer(state: State, [action, data]: ActionData): State {
 
     case ACTION.SET_SEARCH_RESULTS:
       return { ...state, results: data };
+    case ACTION.CALLBACK_SELECTED_HIT:
+      if (state.selectedHit) data(state.selectedHit);
+      return state;
 
     default:
       throw new Error(`Unknown action ${action}`);

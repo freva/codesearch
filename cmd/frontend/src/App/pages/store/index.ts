@@ -6,21 +6,21 @@ export enum ACTION {
   SET_SELECTED_HIT = 'SET_SELECTED_HIT',
   SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS',
 
-  SELECT_QUERY_INPUT = 'SELECT_QUERY_INPUT',
-  SELECT_FILE_INPUT = 'SELECT_FILE_INPUT',
-  SELECT_EXCLUDE_FILE_INPUT = 'SELECT_EXCLUDE_FILE_INPUT',
-  TOGGLE_CASE_INSENSITIVE = 'TOGGLE_CASE_INSENSITIVE',
-
   SELECT_PREVIOUS = 'SELECT_PREVIOUS',
   SELECT_NEXT = 'SELECT_NEXT',
+  CALLBACK_SELECTED_HIT = 'CALLBACK_SELECTED_HIT',
 }
 
 export type Range = [number, number];
-export type Line = { line: string; number: number; range?: Range[] };
-export type File = {
+export type Line = { line: string; number: number; range?: Range };
+export type FileHeader = {
   path: string;
-  uri?: string;
+  directory: string;
+  repository: string;
+  branch: string;
   range?: Range;
+};
+export type File = FileHeader & {
   lines?: Line[];
 };
 export type SearchResult = {
@@ -41,8 +41,7 @@ export type State = {
   selectedHit?: SelectedHit;
 };
 
-export type SelectedHit = {
-  path: string;
+export type SelectedHit = FileHeader & {
   line: number;
 };
 
@@ -57,15 +56,9 @@ export type Filters = {
 
 export type ActionData =
   | [ACTION.SET_FILTERS, Filters]
-  | [
-      | ACTION.SELECT_QUERY_INPUT
-      | ACTION.SELECT_FILE_INPUT
-      | ACTION.SELECT_EXCLUDE_FILE_INPUT
-      | ACTION.TOGGLE_CASE_INSENSITIVE
-      | ACTION.SELECT_PREVIOUS
-      | ACTION.SELECT_NEXT,
-    ]
+  | [ACTION.SELECT_PREVIOUS | ACTION.SELECT_NEXT]
   | [ACTION.SET_SELECTED_HIT, SelectedHit]
+  | [ACTION.CALLBACK_SELECTED_HIT, (hit: SelectedHit) => void]
   | [ACTION.SET_SEARCH_RESULTS, SearchResultState];
 
 export { SearchContextProvider, useSearchContext, dispatch } from './provider';

@@ -11,9 +11,17 @@ import {
   Loader,
   Text,
 } from '@mantine/core';
+import type { Range } from '../store';
 
-type LineMatch = { line: number; range: [number, number] };
-type FileResponse = { content: string; matches: LineMatch[] };
+type LineMatch = { line: number; range: Range };
+type FileResponse = {
+  path: string;
+  repository?: string;
+  branch?: string;
+  range?: Range;
+  content: string;
+  matches: LineMatch[];
+};
 
 function countLines(str: string): number {
   let count = 1;

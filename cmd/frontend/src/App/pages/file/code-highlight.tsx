@@ -1,6 +1,7 @@
 import { codeToHtml } from 'shiki';
 import type { ReactNode } from 'react';
 import { useLayoutEffect, useState } from 'react';
+import type { Range } from '../store';
 
 const fileExtensionToLanguage = Object.fromEntries(
   Object.entries({
@@ -36,7 +37,7 @@ function pathToLanguage(extension: string): string {
   return fileExtensionToLanguage[ext] ?? 'text';
 }
 
-type LineMatch = { line: number; range: [number, number] };
+type LineMatch = { line: number; range: Range };
 export function CodeHighlight({
   code,
   path,

@@ -87,23 +87,19 @@ func maybeWriteComma(w http.ResponseWriter, shouldWriteComma bool) error {
 }
 
 func writeJsonFileHeader(w http.ResponseWriter, path string, pathRegex *stdregexp.Regexp) error {
-	if _, err := w.Write([]byte(fmt.Sprintf("{\"path\":\"%s\"", escapeJsonString(path)))); err != nil {
-		return err
-	}
-
 	var resolvedFile, err = resolvePath(path)
 	if err != nil {
-		log.Printf("Failed to resolve path %s: %v", path, err)
-	} else {
-		branch := "master"
-		if resolvedFile.Branch.Branch != nil {
-			branch = *resolvedFile.Branch.Branch
-		}
-		url := fmt.Sprintf("%s/%s/blob/%s%s", resolvedFile.Branch.ResolveServer().Url, resolvedFile.Branch.Repo, branch, resolvedFile.Relpath)
-		url = escapeJsonString(url)
-		if _, err := w.Write([]byte(fmt.Sprintf(",\"url\":\"%s\"", url))); err != nil {
-			return err
-		}
+		return fmt.Errorf("Failed to resolve path %s: %v", path, err)
+	}
+
+	branch := "master"
+	if resolvedFile.Branch.Branch != nil {
+		branch = *resolvedFile.Branch.Branch
+	}
+	directory := path[:len(path)-len(resolvedFile.Relpath)]
+	if _, err := w.Write([]byte(fmt.Sprintf("{\"path\":\"%s\",\"directory\":\"%s\",\"repository\":\"%s/%s\",\"branch\":\"%s\"",
+		escapeJsonString(resolvedFile.Relpath[1:]), directory, resolvedFile.Branch.ResolveServer().Url, resolvedFile.Branch.Repo, branch))); err != nil {
+		return err
 	}
 
 	if pathRegex != nil {
@@ -412,7 +408,10 @@ func restShowFile(w http.ResponseWriter, path string, query string, ignoreCase b
 	defer file.Close()
 
 	setHeaders(w)
-	if _, err := w.Write([]byte("{\"content\":\"")); err != nil {
+	if err := writeJsonFileHeader(w, path, nil); err != nil {
+		return err
+	}
+	if _, err := w.Write([]byte(",\"content\":\"")); err != nil {
 		return err
 	}
 

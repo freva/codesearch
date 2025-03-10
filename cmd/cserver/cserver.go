@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -134,6 +135,15 @@ func resolvePath(path string) (*File, error) {
 	}
 }
 
+func staticHandler(w http.ResponseWriter, r *http.Request) {
+	file := "index.html"
+	if strings.HasPrefix(r.URL.Path, "/static/") || strings.HasPrefix(r.URL.Path, "/assets/") {
+		file = r.URL.Path
+	}
+
+	http.ServeFile(w, r, filepath.Join(*wFlag, file))
+}
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()
@@ -193,7 +203,7 @@ func main() {
 	}
 	readManifest(*wFlag + "/static/repos.json")
 
-	http.Handle("/static/", http.FileServer(http.Dir(*wFlag)))
+	http.HandleFunc("/", staticHandler)
 	http.HandleFunc("/rest/file", RestFileHandler)
 	http.HandleFunc("/rest/search", RestSearchHandler)
 	http.ListenAndServe(":"+strconv.Itoa(*pFlag), nil)

@@ -42,7 +42,6 @@ export function SearchContextProvider({
 
   // Every time the filters change, update the URL
   useLayoutEffect(() => {
-    if (window.location.pathname !== '/') return;
     if (value.filters.query === '' && value.filters.file === '') return;
     const queryParams = createUrlParams(value.filters);
     if (queryRef.current === queryParams) return;

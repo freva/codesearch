@@ -4,7 +4,7 @@ import { defineConfig as defineVitestConfig } from 'vitest/config';
 
 const viteConfig = defineViteConfig({
   build: {
-    sourcemap: 'hidden',
+    sourcemap: false,
   },
   plugins: [react()],
 });

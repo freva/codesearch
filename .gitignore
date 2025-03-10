@@ -1,5 +1,6 @@
 .idea/
 
+cmd/cserver/static/
 config
 Makefile
 db/

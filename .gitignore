@@ -1,5 +1,7 @@
 .idea/
 
+cmd/cserver/static/index.html
+cmd/cserver/static/assets
 cmd/cserver/static/static/repos.json
 config
 Makefile

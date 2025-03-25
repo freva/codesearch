@@ -6,6 +6,7 @@ import type { Filters, SelectedHit } from '../store';
 import { ACTION, dispatch, useSearchContext } from '../store';
 import type { FieldPath, FieldPathValue, UseFormReturn } from 'react-hook-form';
 import { createUrlParams } from '../store/url-params.ts';
+import { unfocus } from '../../layout/header.tsx';
 
 const testFileRegex = '/tests?/|_tests?\\b|Tests?[^a-z]|/systemtests/|\\.html$';
 
@@ -62,11 +63,6 @@ function modify<TFieldName extends FieldPath<Filters>>(
       field,
       mapper(form.getValues()[field] as FieldPathValue<Filters, TFieldName>),
     );
-}
-
-function unfocus(): void {
-  const elem = document.activeElement;
-  if (elem instanceof HTMLElement) elem.blur();
 }
 
 export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {

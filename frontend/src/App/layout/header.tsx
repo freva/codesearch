@@ -47,7 +47,7 @@ export function Header(): ReactNode {
   return (
     <form
       onSubmit={form.handleSubmit((values) =>
-        navigate(`/search${createUrlParams(values)}`),
+        navigate(`/${createUrlParams(values)}`),
       )}
     >
       <Group justify="center" my="xs" gap="xs">

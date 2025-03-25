@@ -32,7 +32,7 @@ export function SearchContextProvider({
 
   // Every time the URL changes, update the state
   useLayoutEffect(() => {
-    if (location.pathname === '/search') {
+    if (location.pathname === '/') {
       const queryParams = location.search;
       if (queryRef.current === queryParams) return;
       queryRef.current = queryParams;
@@ -55,7 +55,7 @@ export function SearchContextProvider({
         .then((result) => ({ loading: false, result }))
         .catch((error) => ({ loading: false, error }))
         .then((data) => dispatch([ACTION.SET_FILE_RESULT, data]));
-    } else if (location.pathname !== '/' || location.search !== '') {
+    } else {
       navigate('/', { replace: true });
       dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
       dispatch([ACTION.SET_FILE_RESULT, undefined]);

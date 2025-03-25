@@ -88,7 +88,7 @@ export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {
       ['i', modify(form, 'caseInsensitive', (cur) => !cur)],
       // ['b', (): void => form.setFocus('numLinesBefore')],
       ['a', (): void => form.setFocus('numLinesAfter')],
-      ['s', (): void => { navigate(`/search${createUrlParams(form.getValues())}`) }],
+      ['s', (): void => { navigate(`/${createUrlParams(form.getValues())}`) }],
       ['?', (): void => setOpen((open) => !open)],
 
       ['r', (): void => { navigate('/') }],

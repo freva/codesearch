@@ -1,6 +1,5 @@
 import type { ActionData, File, SelectedHit, State } from '.';
 import { ACTION } from '.';
-import { isEqual } from 'lodash';
 
 function* hitIterator(files: File[]): Generator<SelectedHit> {
   for (let file of files) {
@@ -18,7 +17,7 @@ function* hitIterator(files: File[]): Generator<SelectedHit> {
 }
 
 function selectNode(state: State, down: boolean): State {
-  const files = state.results?.results?.files;
+  const files = state.searchResult?.result?.files;
   if (files == null || files.length === 0) {
     if (state.selectedHit == null) return state;
     return { ...state, selectedHit: undefined };
@@ -58,25 +57,31 @@ export function reducer(state: State, actionData: ActionData): State {
 
 function _postReducer(state: State, result: State): State {
   if (state === result) return result; // Short circuit if pre-reducer produced no change
-  if (state.results?.results !== result.results?.results)
-    result = _preReducer(result, [ACTION.SELECT_NEXT]);
   return result;
 }
 
 function _preReducer(state: State, [action, data]: ActionData): State {
   switch (action) {
-    case ACTION.SET_FILTERS:
-      return isEqual(state.filters, data) ? state : { ...state, filters: data };
-    case ACTION.SET_SELECTED_HIT:
-      return { ...state, selectedHit: data };
-
     case ACTION.SELECT_PREVIOUS:
       return selectNode(state, false);
     case ACTION.SELECT_NEXT:
       return selectNode(state, true);
 
-    case ACTION.SET_SEARCH_RESULTS:
-      return { ...state, results: data };
+    case ACTION.SET_SEARCH_RESULT:
+      return selectNode({ ...state, searchResult: data }, true);
+    case ACTION.SET_FILE_RESULT: {
+      const match = /^#L(\d+)$/.exec(window.location.hash);
+      const selectedHit = data?.result
+        ? {
+            path: data.result.path,
+            directory: data.result.directory,
+            repository: data.result.repository,
+            branch: data.result.branch,
+            line: match ? parseInt(match[1], 10) : 0,
+          }
+        : undefined;
+      return { ...state, fileResult: data, selectedHit };
+    }
     case ACTION.CALLBACK_SELECTED_HIT:
       if (state.selectedHit) data(state.selectedHit);
       return state;

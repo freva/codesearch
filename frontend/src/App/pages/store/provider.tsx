@@ -3,9 +3,9 @@ import { useLayoutEffect, useReducer, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createContext, useContextSelector } from 'use-context-selector';
 import { ACTION } from '.';
-import type { ActionData, State, SearchResult, Filters } from '.';
+import type { ActionData, State, SearchResult, Filters, FileResult } from '.';
 import { reducer } from './reducer';
-import { parseUrlParams, createUrlParams } from './url-params';
+import { parseUrlParams } from './url-params';
 import { Get } from '../../libs/fetcher';
 import { useForm } from 'react-hook-form';
 
@@ -18,14 +18,12 @@ export function SearchContextProvider({
   const location = useLocation();
   const navigate = useNavigate();
   const form = useForm<Filters>({
-    defaultValues: parseUrlParams(location.search),
+    values: parseUrlParams(location.search),
+    shouldUnregister: true,
   });
   const queryRef = useRef<string | undefined>(undefined);
 
-  const [value, searchContextDispatch] = useReducer(reducer, {
-    filters: parseUrlParams(location.search),
-    form,
-  });
+  const [value, searchContextDispatch] = useReducer(reducer, { form });
 
   useLayoutEffect(() => {
     searchContextDispatchRef = searchContextDispatch;
@@ -34,28 +32,35 @@ export function SearchContextProvider({
 
   // Every time the URL changes, update the state
   useLayoutEffect(() => {
-    if (location.pathname !== '/') return;
-    const filters = parseUrlParams(location.search);
-    dispatch([ACTION.SET_FILTERS, filters]);
-    form.reset(filters);
-  }, [location.search]);
+    if (location.pathname === '/search') {
+      const queryParams = location.search;
+      if (queryRef.current === queryParams) return;
+      queryRef.current = queryParams;
 
-  // Every time the filters change, update the URL
-  useLayoutEffect(() => {
-    if (value.filters.query === '' && value.filters.file === '') return;
-    const queryParams = createUrlParams(value.filters);
-    if (queryRef.current === queryParams) return;
-    queryRef.current = queryParams;
+      dispatch([ACTION.SET_FILE_RESULT, undefined]);
+      if (queryParams === '')
+        return dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
 
-    dispatch([ACTION.SET_SEARCH_RESULTS, { loading: true }]);
-    Get<SearchResult>(`/rest/search${queryParams}`)
-      .then((results) => ({ loading: false, results }))
-      .catch((error) => ({ loading: false, error }))
-      .then((data) => dispatch([ACTION.SET_SEARCH_RESULTS, data]));
+      dispatch([ACTION.SET_SEARCH_RESULT, { loading: true }]);
+      Get<SearchResult>(`/rest/search${queryParams}`)
+        .then((result) => ({ loading: false, result }))
+        .catch((error) => ({ loading: false, error }))
+        .then((data) => dispatch([ACTION.SET_SEARCH_RESULT, data]));
+    } else if (location.pathname.startsWith('/file/')) {
+      const params = new URLSearchParams(location.search);
+      params.set('p', location.pathname.substring(6));
 
-    if (queryParams !== window.location.search)
-      navigate(window.location.pathname + queryParams);
-  }, [navigate, value.filters]);
+      dispatch([ACTION.SET_FILE_RESULT, { loading: true }]);
+      Get<FileResult>(`/rest/file?${params.toString()}`)
+        .then((result) => ({ loading: false, result }))
+        .catch((error) => ({ loading: false, error }))
+        .then((data) => dispatch([ACTION.SET_FILE_RESULT, data]));
+    } else if (location.pathname !== '/' || location.search !== '') {
+      navigate('/', { replace: true });
+      dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
+      dispatch([ACTION.SET_FILE_RESULT, undefined]);
+    }
+  }, [location.pathname, location.search]);
 
   return <context.Provider value={value}>{children}</context.Provider>;
 }

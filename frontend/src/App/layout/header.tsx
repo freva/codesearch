@@ -1,9 +1,11 @@
 import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
 import { Button, Checkbox, Divider, Group, Input, Text } from '@mantine/core';
 import type { Filters } from '../pages/store';
-import { ACTION, dispatch, useSearchContext } from '../pages/store';
+import { useSearchContext } from '../pages/store';
 import { Controller } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { createUrlParams } from '../pages/store/url-params.ts';
 
 function Shortcut({
   children,
@@ -40,11 +42,12 @@ function TextInput({
 
 export function Header(): ReactNode {
   const form = useSearchContext((ctx) => ctx.form);
+  const navigate = useNavigate();
 
   return (
     <form
       onSubmit={form.handleSubmit((values) =>
-        dispatch([ACTION.SET_FILTERS, values]),
+        navigate(`/search${createUrlParams(values)}`),
       )}
     >
       <Group justify="center" my="xs" gap="xs">

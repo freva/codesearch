@@ -2,9 +2,8 @@ import type { UseFormReturn } from 'react-hook-form';
 
 // Without setting a string value the reducer fails with https://github.com/microsoft/TypeScript/issues/28102 :(
 export enum ACTION {
-  SET_FILTERS = 'SET_FILTERS',
-  SET_SELECTED_HIT = 'SET_SELECTED_HIT',
-  SET_SEARCH_RESULTS = 'SET_SEARCH_RESULTS',
+  SET_SEARCH_RESULT = 'SET_SEARCH_RESULT',
+  SET_FILE_RESULT = 'SET_FILE_RESULT',
 
   SELECT_PREVIOUS = 'SELECT_PREVIOUS',
   SELECT_NEXT = 'SELECT_NEXT',
@@ -28,21 +27,26 @@ export type SearchResult = {
   truncated: boolean;
   hits: number;
 };
-type SearchResultState = {
+export type LineMatch = { line: number; range: Range };
+export type FileResult = FileHeader & {
+  content: string;
+  matches: LineMatch[];
+};
+
+type HttpResultState<T> = {
   loading: boolean;
   error?: { message: string };
-  results?: SearchResult;
+  result?: T;
+};
+export type SelectedHit = FileHeader & {
+  line: number;
 };
 
 export type State = {
-  filters: Filters;
   form: UseFormReturn<Filters>;
-  results?: SearchResultState;
+  searchResult?: HttpResultState<SearchResult>;
+  fileResult?: HttpResultState<FileResult>;
   selectedHit?: SelectedHit;
-};
-
-export type SelectedHit = FileHeader & {
-  line: number;
 };
 
 export type Filters = {
@@ -55,10 +59,9 @@ export type Filters = {
 };
 
 export type ActionData =
-  | [ACTION.SET_FILTERS, Filters]
   | [ACTION.SELECT_PREVIOUS | ACTION.SELECT_NEXT]
-  | [ACTION.SET_SELECTED_HIT, SelectedHit]
   | [ACTION.CALLBACK_SELECTED_HIT, (hit: SelectedHit) => void]
-  | [ACTION.SET_SEARCH_RESULTS, SearchResultState];
+  | [ACTION.SET_SEARCH_RESULT, HttpResultState<SearchResult> | undefined]
+  | [ACTION.SET_FILE_RESULT, HttpResultState<FileResult> | undefined];
 
 export { SearchContextProvider, useSearchContext, dispatch } from './provider';

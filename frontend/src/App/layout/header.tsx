@@ -7,6 +7,11 @@ import type { Control } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { createUrlParams } from '../pages/store/url-params.ts';
 
+export function unfocus(): void {
+  const elem = document.activeElement;
+  if (elem instanceof HTMLElement) elem.blur();
+}
+
 function Shortcut({
   children,
   shortcut,
@@ -46,9 +51,10 @@ export function Header(): ReactNode {
 
   return (
     <form
-      onSubmit={form.handleSubmit((values) =>
-        navigate(`/${createUrlParams(values)}`),
-      )}
+      onSubmit={form.handleSubmit((values) => {
+        navigate(`/${createUrlParams(values)}`);
+        unfocus();
+      })}
     >
       <Group justify="center" my="xs" gap="xs">
         <Text size="lg">Lines matching</Text>

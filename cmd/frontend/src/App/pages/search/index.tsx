@@ -75,17 +75,17 @@ function Hit({ file }: { file: File }): ReactNode {
 }
 
 export function Search(): ReactNode {
-  const resultState = useSearchContext((ctx) => ctx.results);
+  const resultState = useSearchContext((ctx) => ctx.searchResult);
   if (resultState == null) return null;
 
-  const { loading, error, results } = resultState;
+  const { loading, error, result } = resultState;
   if (loading) return <Loader color="blue" />;
   if (error)
     return <Alert variant="filled" color="red" title={error.message} m="xl" />;
 
   return (
     <div className="container">
-      {results!.files.map((file) => (
+      {result!.files.map((file) => (
         <Hit key={`${file.path}:${file.range}`} file={file} />
       ))}
     </div>

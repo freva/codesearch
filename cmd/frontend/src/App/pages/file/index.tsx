@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { useGet } from '../../libs/fetcher';
+import { Link, useLocation } from 'react-router-dom';
 import { CodeHighlight } from './code-highlight';
 import {
   Alert,
@@ -11,17 +10,8 @@ import {
   Loader,
   Text,
 } from '@mantine/core';
-import type { Range } from '../store';
-
-type LineMatch = { line: number; range: Range };
-type FileResponse = {
-  path: string;
-  repository?: string;
-  branch?: string;
-  range?: Range;
-  content: string;
-  matches: LineMatch[];
-};
+import type { LineMatch } from '../store';
+import { useSearchContext } from '../store';
 
 function countLines(str: string): number {
   let count = 1;
@@ -77,22 +67,20 @@ function FileContent({
 }
 
 export function File(): ReactNode {
-  const file = useParams()['*']!;
-  const params = new URLSearchParams(window.location.search);
-  params.set('p', file);
-  const { loading, error, response } = useGet<FileResponse>(
-    `/rest/file?${params.toString()}`,
-  );
+  const resultState = useSearchContext((ctx) => ctx.fileResult);
+  if (resultState == null) return null;
 
+  const { loading, error, result } = resultState;
   if (loading) return <Loader color="blue" />;
   if (error)
     return (
       <Alert variant="filled" color="red" title={error.message} m="xl"></Alert>
     );
+
   return (
     <Container fluid>
       <Breadcrumbs fz="lg" my="sm">
-        {file.split('/').map((name, i, arr) =>
+        {result!.path.split('/').map((name, i, arr) =>
           i == arr.length - 1 ? (
             <Text key={`${i}-${name}`}>{name}</Text>
           ) : (
@@ -106,9 +94,9 @@ export function File(): ReactNode {
         )}
       </Breadcrumbs>
       <FileContent
-        code={response.content}
-        path={file}
-        ranges={response.matches}
+        code={result!.content}
+        path={result!.path}
+        ranges={result!.matches}
       />
     </Container>
   );

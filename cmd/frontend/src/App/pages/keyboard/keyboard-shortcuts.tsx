@@ -91,6 +91,7 @@ export function KeyboardShortcuts(): ReactNode {
               shortcut('a', 'Focus context after input'),
               shortcut('i', 'Toggle case insensitivity'),
               shortcut('s', 'Search'),
+              shortcut('r', 'Reset'),
             ]}
           />
           <Stack>

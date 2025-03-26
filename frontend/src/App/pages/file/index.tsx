@@ -80,18 +80,20 @@ export function File(): ReactNode {
   return (
     <Container fluid>
       <Breadcrumbs fz="lg" my="sm">
-        {result!.path.split('/').map((name, i, arr) =>
-          i == arr.length - 1 ? (
-            <Text key={`${i}-${name}`}>{name}</Text>
-          ) : (
-            <Link
-              key={`${i}-${name}`}
-              to={'/file/' + arr.slice(0, i).join('/')}
-            >
-              {name}
-            </Link>
-          ),
-        )}
+        {`${result!.directory}/${result!.path}`
+          .split('/')
+          .map((name, i, arr) =>
+            i == arr.length - 1 ? (
+              <Text key={`${i}-${name}`}>{name}</Text>
+            ) : (
+              <Link
+                key={`${i}-${name}`}
+                to={'/file/' + arr.slice(0, i).join('/')}
+              >
+                {name}
+              </Link>
+            ),
+          )}
       </Breadcrumbs>
       <FileContent
         code={result!.content}

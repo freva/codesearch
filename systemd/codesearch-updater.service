@@ -1,0 +1,10 @@
+[Unit]
+Description=Codesearch index updater
+
+[Service]
+ExecStart=%h/.go/bin/csupdater --config %h/dev/codesearch/config
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=default.target

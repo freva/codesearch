@@ -10,4 +10,4 @@ restart: go
 	systemctl --user restart codesearch-server.service
 
 update:
-	./updater/bin/updater -c ./config
+	~/.go/bin/csupdater --config ./config

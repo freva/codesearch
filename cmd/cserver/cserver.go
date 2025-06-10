@@ -8,131 +8,62 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
-	"github.com/hakonhall/codesearch/index"
+	"github.com/hakonhall/codesearch/internal/config"
 )
 
-var usageMessage = `usage: cserver [OPTION...]
-Start HTTP server, serving a search and view interface of a source tree.
+var CONFIG *config.Config
+var BRANCHES map[string]config.Repository
 
-Options:
-  -f FIDX     Path to file index made on the paths of SOURCE.*
-  -index IDX  Path to index made by cindex on SOURCE. [CSEARCHINDEX]
-  -p PORT     Port to listen to. [80]
-  -s SOURCE   Path to source directory.*
-  -t TSFILE   Path to timestamp file of the last index update.*
-  -w STATIC   Path to static files to serve (cmd/server/static/).*
-*) Option is required.
-
-WARNING: All files and directories below STATIC and SOURCE are accessible from
-the cserver HTTP server.  
-`
-
-var INDEX_PATH string
-
-func usage() {
-	fmt.Fprintf(os.Stderr, usageMessage)
-	os.Exit(2)
+type File struct {
+	Repository config.Repository
+	Relpath    string
 }
 
-var (
-	fFlag     = flag.String("f", "", "Path to file index (required)")
-	indexFlag = flag.String("index", "", "Path to index file [CSEARCHINDEX]")
-	pFlag     = flag.Int("p", 80, "Port to listen to [80]")
-	sFlag     = flag.String("s", "", "Path to the source tree (required)")
-	tFlag     = flag.String("t", "", "Path to the timestamp file of the last index update (required)")
-	wFlag     = flag.String("w", "", "Path to static files to serve [cmd/cserver/static/]")
-)
-
-type Manifest struct {
-	Servers  []Server
-	Branches []Branch
-}
-
-type Server struct {
-	Name string
-	Url  string
-}
-
-type Branch struct {
-	Server string
-	Dir    string
-	Repo   string
-	Branch *string
-}
-
-func (s Branch) ResolveServer() Server {
-	server, ok := SERVERS[s.Server]
+func (f File) ResolveServer() *config.Server {
+	server, ok := CONFIG.Servers[f.Repository.Server]
 	if !ok {
-		log.Print("Failed to find " + s.Server + " in SERVERS")
+		log.Print("Failed to find " + f.Repository.Server + " in SERVERS")
 	}
 	return server
 }
 
-type File struct {
-	Branch  Branch
-	Relpath string
+func readManifest(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read manifest '%s': %w", path, err)
+	}
+
+	var repositories []config.Repository
+	if err := json.Unmarshal(data, &repositories); err != nil {
+		return fmt.Errorf("failed to unmarshal manifest from '%s': %w", path, err)
+	}
+
+	BRANCHES = make(map[string]config.Repository)
+	for _, repository := range repositories {
+		BRANCHES[repository.RepoDir()] = repository
+	}
+	return nil
 }
 
-// Server by server name
-var SERVERS map[string]Server
-
-// Branch by dir
-var BRANCHES map[string]Branch
-
-func readManifest(path string) {
-	manifestFile, e := os.Open(path)
-	if e != nil {
-		log.Fatal("Failed to open " + path)
-	}
-	defer manifestFile.Close()
-	manifestData, e := ioutil.ReadAll(manifestFile)
-	if e != nil {
-		log.Fatal("Failed to read " + path)
-	}
-
-	var manifest Manifest
-	json.Unmarshal(manifestData, &manifest)
-
-	//fmt.Printf("%q\n", manifest)
-	SERVERS = make(map[string]Server)
-	for _, server := range manifest.Servers {
-		SERVERS[server.Name] = server
-	}
-
-	BRANCHES = make(map[string]Branch)
-	for _, branch := range manifest.Branches {
-		BRANCHES["/"+branch.Dir] = branch
-	}
-}
-
-// path must be relative to the serving directory (sFlag).
+// path must be relative to the serving directory.
 func resolvePath(path string) (*File, error) {
-	prefix := ""
-	suffix := "/" + path
-	for {
-		var offset = strings.Index(suffix[1:], "/") + 1
-		if offset < 1 {
-			return nil, fmt.Errorf("Failed to find branch for " + path)
-		}
-		var name = suffix[:offset]
-		if len(name) == 0 {
-			return nil, fmt.Errorf("Found empty component for " + path)
-		}
-		prefix += name
-		suffix = suffix[offset:]
-		branch, ok := BRANCHES[prefix]
-		if ok {
-			return &File{Branch: branch, Relpath: suffix}, nil
-		}
+	prefix := path
+	parts := strings.Split(path, "/")
+	if len(parts) > 3 {
+		prefix = filepath.Join(parts[:4]...)
 	}
+
+	branch, ok := BRANCHES[prefix]
+	if ok {
+		return &File{Repository: branch, Relpath: path[len(prefix)+1:]}, nil
+	}
+	return nil, fmt.Errorf("no such branch in manifest: %s", prefix)
 }
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
@@ -141,71 +72,51 @@ func staticHandler(w http.ResponseWriter, r *http.Request) {
 		file = r.URL.Path
 	}
 
-	http.ServeFile(w, r, filepath.Join(*wFlag, file))
+	http.ServeFile(w, r, filepath.Join(CONFIG.WebDir, file))
 }
 
 func main() {
-	flag.Usage = usage
+	var configPath string
+	flag.StringVar(&configPath, "config", "", "Path to config file (required).")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `usage: cserver [OPTION...]
+Start HTTP server, serving a search and view interface of a source tree.`)
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 
-	if *fFlag == "" {
-		log.Fatal("-f is required, see -help for usage")
-	}
-	fileIndexFileInfo, e := os.Stat(*fFlag)
-	if e != nil {
-		if os.IsNotExist(e) {
-			log.Fatal("No such index file: " + *fFlag)
-		} else {
-			log.Fatal("Failed to stat file: " + *fFlag)
-		}
-	}
-	if !fileIndexFileInfo.Mode().IsRegular() {
-		log.Fatal("Not an index file: " + *fFlag)
+	config, err := config.ParseConfig(configPath)
+	if err != nil {
+		log.Fatal("could not parse config file: %w", err)
 	}
 
-	INDEX_PATH = index.File(*indexFlag)
-	indexfileInfo, e := os.Stat(INDEX_PATH)
-	if e != nil {
-		if os.IsNotExist(e) {
-			log.Fatal("No such index file: " + INDEX_PATH)
+	CONFIG = config
+	indexfileInfo, err := os.Stat(CONFIG.IndexPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Fatal("No such index file: " + CONFIG.IndexPath)
 		} else {
-			log.Fatal("Failed to stat file: " + INDEX_PATH)
+			log.Fatal("Failed to stat file: " + CONFIG.IndexPath)
 		}
 	}
 	if !indexfileInfo.Mode().IsRegular() {
-		log.Fatal("Index file points to a directory: " + INDEX_PATH)
+		log.Fatal("IndexPath file points to a directory: " + CONFIG.IndexPath)
 	}
 
-	if *sFlag == "" {
-		log.Fatal("-s is required, see -help for usage")
+	sFileInfo, err := os.Stat(filepath.Join(CONFIG.WebDir, "static"))
+	if err != nil || !sFileInfo.IsDir() {
+		log.Fatal("No 'static' directory under webdir: " + CONFIG.WebDir)
 	}
-	if (*sFlag)[len(*sFlag)-1:] != "/" {
-		*sFlag += "/"
+	if err := readManifest(CONFIG.ManifestPath); err != nil {
+		log.Fatal("Failed to read manifest: " + err.Error())
 	}
-
-	if *tFlag == "" {
-		log.Fatal("-t is required, see -help for usage")
-	}
-
-	if *wFlag == "" {
-		log.Fatal("-w is required, see -help for usage")
-	}
-	sFileInfo, e := os.Stat(*wFlag)
-	if e != nil {
-		log.Fatal("Failed to open '" + *wFlag + "'")
-	}
-	if !sFileInfo.IsDir() {
-		log.Fatal("Not a directory: " + *wFlag)
-	}
-	sFileInfo, e = os.Stat(*wFlag + "/static")
-	if e != nil || !sFileInfo.IsDir() {
-		log.Fatal("Does not look like a path to cmd/cserver/static: " + *wFlag)
-	}
-	readManifest(*wFlag + "/static/repos.json")
 
 	http.HandleFunc("/", staticHandler)
 	http.HandleFunc("/rest/file", RestFileHandler)
 	http.HandleFunc("/rest/search", RestSearchHandler)
-	http.ListenAndServe(":"+strconv.Itoa(*pFlag), nil)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", CONFIG.Port), nil); err != nil {
+		log.Fatal("ListenAndServe failed: ", err)
+	}
 	fmt.Println("ListenAndServe returned, exiting process!")
 }

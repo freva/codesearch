@@ -2,7 +2,7 @@
 Description=Codesearch HTTP server
 
 [Service]
-ExecStart=/home/valerijf/dev/codesearch/updater/bin/server -c /home/valerijf/dev/codesearch/config
+ExecStart=%h/.go/bin/cserver --config %h/dev/codesearch/config
 Restart=always
 RestartSec=1
 

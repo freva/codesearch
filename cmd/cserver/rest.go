@@ -3,16 +3,18 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/freva/codesearch/index"
-	"github.com/freva/codesearch/regexp"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	stdregexp "regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/freva/codesearch/index"
+	"github.com/freva/codesearch/regexp"
 )
 
 var escapedChars = map[rune]string{
@@ -25,8 +27,8 @@ var escapedChars = map[rune]string{
 	'\f': "\\f",
 }
 
-func RemovePathPrefix(path string) string {
-	return strings.TrimPrefix(path, *sFlag)
+func removePathPrefix(path index.Path) string {
+	return strings.TrimPrefix(path.String(), CONFIG.CodeDir)
 }
 
 func escapeJsonString(str string) string {
@@ -44,17 +46,11 @@ func escapeJsonString(str string) string {
 }
 
 func indexUpdatedAt() time.Time {
-	data, err := os.ReadFile(*tFlag)
+	stat, err := os.Stat(CONFIG.IndexPath)
 	if err != nil {
-		log.Printf("Failed to read timestamp file: %w", err)
 		return time.Unix(0, 0)
 	}
-	t, err := time.Parse(time.RFC3339, strings.TrimSpace(string(data)))
-	if err != nil {
-		log.Printf("Failed to parse timestamp ('%s') in timestamp file: %w", data, err)
-		return time.Unix(0, 0)
-	}
-	return t
+	return stat.ModTime()
 }
 
 func setHeaders(w http.ResponseWriter) {
@@ -87,18 +83,13 @@ func maybeWriteComma(w http.ResponseWriter, shouldWriteComma bool) error {
 }
 
 func writeJsonFileHeader(w http.ResponseWriter, path string, pathRegex *stdregexp.Regexp) error {
-	var resolvedFile, err = resolvePath(path)
+	var file, err = resolvePath(path)
 	if err != nil {
 		return fmt.Errorf("Failed to resolve path %s: %v", path, err)
 	}
 
-	branch := "master"
-	if resolvedFile.Branch.Branch != nil {
-		branch = *resolvedFile.Branch.Branch
-	}
-	directory := path[:len(path)-len(resolvedFile.Relpath)]
-	if _, err := w.Write([]byte(fmt.Sprintf("{\"path\":\"%s\",\"directory\":\"%s\",\"repository\":\"%s/%s\",\"branch\":\"%s\"",
-		escapeJsonString(resolvedFile.Relpath[1:]), directory, resolvedFile.Branch.ResolveServer().Url, resolvedFile.Branch.Repo, branch))); err != nil {
+	if _, err := w.Write([]byte(fmt.Sprintf("{\"path\":\"%s\",\"directory\":\"%s\",\"repository\":\"%s/%s/%s\",\"branch\":\"%s\"",
+		escapeJsonString(file.Relpath[1:]), file.Repository.RepoDir(), file.ResolveServer().WebURL, file.Repository.Owner, file.Repository.Name, file.Repository.Branch))); err != nil {
 		return err
 	}
 
@@ -161,7 +152,7 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 	}
 
 	q := index.RegexpQuery(queryRe.Syntax)
-	ix := index.Open(INDEX_PATH)
+	ix := index.Open(CONFIG.IndexPath)
 	ix.Verbose = false
 	var post = ix.PostingQuery(q)
 
@@ -180,7 +171,7 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 		}
 
 		fullPath := ix.Name(fileId)
-		path := RemovePathPrefix(fullPath.String())
+		path := removePathPrefix(fullPath)
 
 		if fileRe != nil {
 			// Retain only those files matching the file pattern.
@@ -280,8 +271,7 @@ func searchFile(w http.ResponseWriter, fileFilter string, excludeFileFilter stri
 		}
 	}
 
-	// TODO: Fix this path
-	idx := index.Open(*fFlag)
+	idx := index.Open(CONFIG.FileIndexPath)
 	idx.Verbose = false
 	query := index.RegexpQuery(fileRe.Syntax)
 	var post = idx.PostingQuery(query)
@@ -401,7 +391,7 @@ func restShowFile(w http.ResponseWriter, path string, query string, ignoreCase b
 		return err
 	}
 
-	file, err := os.Open(*sFlag + path)
+	file, err := os.Open(filepath.Join(CONFIG.CodeDir, path))
 	if err != nil {
 		return err
 	}

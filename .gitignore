@@ -1,6 +1,6 @@
 .idea/
 
-cmd/cserver/static/
-config
-Makefile
-db/
+/cmd/cserver/static/
+/db/
+/config
+/Makefile

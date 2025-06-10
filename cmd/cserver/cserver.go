@@ -204,8 +204,6 @@ func main() {
 	readManifest(*wFlag + "/static/repos.json")
 
 	http.HandleFunc("/", staticHandler)
-	http.HandleFunc("/old/index", search_handler)
-	http.HandleFunc("/old/file/", file_handler)
 	http.HandleFunc("/rest/file", RestFileHandler)
 	http.HandleFunc("/rest/search", RestSearchHandler)
 	http.ListenAndServe(":"+strconv.Itoa(*pFlag), nil)

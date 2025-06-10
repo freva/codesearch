@@ -25,6 +25,10 @@ var escapedChars = map[rune]string{
 	'\f': "\\f",
 }
 
+func removePathPrefix(path index.Path) string {
+	return strings.TrimPrefix(path.String(), CONFIG.CodeDir)
+}
+
 func escapeJsonString(str string) string {
 	var result string
 	for _, r := range str {

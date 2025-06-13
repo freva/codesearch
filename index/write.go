@@ -37,7 +37,7 @@ import (
 
 // An IndexWriter creates an on-disk index corresponding to a set of files.
 type IndexWriter struct {
-	Force bool   // Ignore size, line-length, and trigrams limits
+	Force   bool // Ignore size, line-length, and trigrams limits
 	LogSkip bool // log information about skipped files
 	Verbose bool // log status using package log
 	Zip     bool // index content of zip files
@@ -70,8 +70,8 @@ const npost = 64 << 20 / 8 // 64 MB worth of post entries
 // Create returns a new IndexWriter that will write the index to file.
 func Create(file string) *IndexWriter {
 	ix := &IndexWriter{
-	        Force:     false,
-	        LogSkip:   true,
+		Force:     false,
+		LogSkip:   true,
 		trigram:   sparse.NewSet(1 << 24),
 		nameData:  bufCreate(""),
 		nameIndex: bufCreate(""),
@@ -360,7 +360,9 @@ func (ix *IndexWriter) Flush() {
 	os.Remove(ix.nameIndex.name)
 	os.Remove(ix.postIndex.name)
 
-	log.Printf("%d data bytes, %d index bytes", ix.totalBytes, ix.main.Offset())
+	if ix.Verbose {
+		log.Printf("%d data bytes, %d index bytes", ix.totalBytes, ix.main.Offset())
+	}
 
 	ix.main.Flush()
 }
@@ -432,7 +434,9 @@ func (ix *IndexWriter) mergePost(out *Buffer) {
 	var h postHeap
 
 	if len(ix.postEnds) > 0 {
-		log.Printf("merge mem + %d MB disk", ix.postEnds[len(ix.postEnds)-1]>>20)
+		if ix.Verbose {
+			log.Printf("merge mem + %d MB disk", ix.postEnds[len(ix.postEnds)-1]>>20)
+		}
 		h.addFile(ix.postFile, ix.postEnds)
 	}
 	sortPost(ix.post)

@@ -357,7 +357,9 @@ func (ix *IndexWriter) Flush() {
 	os.Remove(ix.nameIndex.name)
 	os.Remove(ix.postIndex.name)
 
-	log.Printf("%d data bytes, %d index bytes", ix.totalBytes, ix.main.Offset())
+	if ix.Verbose {
+		log.Printf("%d data bytes, %d index bytes", ix.totalBytes, ix.main.Offset())
+	}
 
 	ix.main.Flush()
 }
@@ -429,7 +431,9 @@ func (ix *IndexWriter) mergePost(out *Buffer) {
 	var h postHeap
 
 	if len(ix.postEnds) > 0 {
-		log.Printf("merge mem + %d MB disk", ix.postEnds[len(ix.postEnds)-1]>>20)
+		if ix.Verbose {
+			log.Printf("merge mem + %d MB disk", ix.postEnds[len(ix.postEnds)-1]>>20)
+		}
 		h.addFile(ix.postFile, ix.postEnds)
 	}
 	sortPost(ix.post)

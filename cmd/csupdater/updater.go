@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"time"
 
 	"github.com/hakonhall/codesearch/internal/config"
 )
@@ -40,7 +41,7 @@ Options:
 	flag.Parse()
 
 	if args.HelpConfig {
-		fmt.Println(config.ConfigHelp())
+		fmt.Println(config.Help())
 		return
 	}
 	if args.ConfigFile == "" {
@@ -62,25 +63,25 @@ Options:
 }
 
 func run(args AppArgs) error {
-	config, err := config.ParseConfig(args.ConfigFile)
+	cfg, err := config.ReadConfig(args.ConfigFile)
 	if err != nil {
-		return fmt.Errorf("could not parse config file: %w", err)
+		return fmt.Errorf("could not parse cfg file: %w", err)
 	}
 
 	if args.DoManifest {
-		if err := updateManifest(config); err != nil {
+		if err := updateManifest(cfg); err != nil {
 			return fmt.Errorf("manifest update failed: %w", err)
 		}
 	}
 
 	if args.DoSync {
-		if err := SyncRepos(config); err != nil {
+		if err := SyncRepos(cfg); err != nil {
 			return fmt.Errorf("repository sync failed: %w", err)
 		}
 	}
 
 	if args.DoIndex {
-		if err := UpdateIndices(config); err != nil {
+		if err := UpdateIndices(cfg); err != nil {
 			return fmt.Errorf("indexing failed: %w", err)
 		}
 	}
@@ -88,17 +89,29 @@ func run(args AppArgs) error {
 	return nil
 }
 
-func updateManifest(config *config.Config) error {
-	repos, err := GetAllRepositories(config)
+func updateManifest(cfg *config.Config) error {
+	repos, err := GetAllRepositories(cfg)
 	if err != nil {
 		return fmt.Errorf("could not fetch repositories: %w", err)
 	}
 
-	serialized, err := json.MarshalIndent(repos, "", "    ")
+	servers := make(map[string]string)
+	for name, server := range cfg.Servers {
+		servers[name] = server.WebURL
+	}
+	reposByPrefix := make(map[string]*config.Repository)
+	for _, repo := range repos {
+		reposByPrefix[repo.RepoDir()] = &repo
+	}
+	serialized, err := json.MarshalIndent(&config.Manifest{
+		Servers:      servers,
+		Repositories: reposByPrefix,
+		UpdatedAt:    time.Now(),
+	}, "", "    ")
 	if err != nil {
 		return fmt.Errorf("could not marshal manifest: %w", err)
 	}
-	if err := atomicWriteFile(config.ManifestPath, serialized); err != nil {
+	if err := atomicWriteFile(cfg.ManifestPath, serialized); err != nil {
 		return fmt.Errorf("could not write manifest file: %w", err)
 	}
 	return nil

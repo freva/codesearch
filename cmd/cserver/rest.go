@@ -83,13 +83,13 @@ func maybeWriteComma(w http.ResponseWriter, shouldWriteComma bool) error {
 }
 
 func writeJsonFileHeader(w http.ResponseWriter, path string, pathRegex *stdregexp.Regexp) error {
-	var file, err = resolvePath(path)
-	if err != nil {
-		return fmt.Errorf("Failed to resolve path %s: %v", path, err)
+	var file = resolvePath(path)
+	if file == nil {
+		return fmt.Errorf("Failed to resolve path %s", path)
 	}
 
 	if _, err := w.Write([]byte(fmt.Sprintf("{\"path\":\"%s\",\"directory\":\"%s\",\"repository\":\"%s/%s/%s\",\"branch\":\"%s\"",
-		escapeJsonString(file.Relpath[1:]), file.Repository.RepoDir(), file.ResolveServer().WebURL, file.Repository.Owner, file.Repository.Name, file.Repository.Branch))); err != nil {
+		escapeJsonString(file.Relpath), file.Repository.RepoDir(), file.ResolveServer().WebURL, file.Repository.Owner, file.Repository.Name, file.Repository.Branch))); err != nil {
 		return err
 	}
 

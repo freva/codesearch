@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/freva/codesearch/index"
 	"github.com/freva/codesearch/internal/config"
@@ -25,7 +26,7 @@ func UpdateIndices(config *config.Config) error {
 		return fmt.Errorf("failed to create file lists directory '%s': %w", fileListsPath, err)
 	}
 
-	codeIndex := index.Create(config.IndexPath + "~")
+	codeIndex := index.Create(config.CodeIndexPath + "~")
 	codeIndex.LogSkip = false
 	codeIndex.AddRoots([]index.Path{index.MakePath(config.CodeDir)})
 	fileIndex := index.Create(config.FileIndexPath + "~")
@@ -58,11 +59,7 @@ func UpdateIndices(config *config.Config) error {
 		}
 		lineCounter++
 
-		relPath, err := filepath.Rel(config.CodeDir, path)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Fprintln(currentFile, relPath)
+		_, err = fmt.Fprintln(currentFile, strings.TrimPrefix(path, config.CodeDir+"/"))
 		if err != nil {
 			return err
 		}
@@ -75,7 +72,7 @@ func UpdateIndices(config *config.Config) error {
 	codeIndex.Flush()
 	fileIndex.Flush()
 
-	if err := os.Rename(config.IndexPath+"~", config.IndexPath); err != nil {
+	if err := os.Rename(config.CodeIndexPath+"~", config.CodeIndexPath); err != nil {
 		return fmt.Errorf("failed to rename code index file: %w", err)
 	}
 	if err := os.Rename(config.FileIndexPath+"~", config.FileIndexPath); err != nil {

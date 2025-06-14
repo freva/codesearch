@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -18,14 +17,9 @@ import (
 
 // SyncRepos clones new repos, updates existing ones, and removes any that are no longer needed.
 func SyncRepos(cfg *config.Config) error {
-	data, err := os.ReadFile(cfg.ManifestPath)
+	manifest, err := config.ReadManifest(cfg.ManifestPath)
 	if err != nil {
-		return fmt.Errorf("failed to read manifest '%s': %w", cfg.ManifestPath, err)
-	}
-
-	var reposToSync []config.Repository
-	if err := json.Unmarshal(data, &reposToSync); err != nil {
-		return fmt.Errorf("failed to unmarshal manifest from '%s': %w", cfg.ManifestPath, err)
+		return err
 	}
 
 	orphans, err := listWithMaxDepth(cfg.CodeDir, 2)
@@ -33,7 +27,7 @@ func SyncRepos(cfg *config.Config) error {
 		return fmt.Errorf("could not scan for orphaned directories: %w", err)
 	}
 
-	for _, repo := range reposToSync {
+	for _, repo := range manifest.Repositories {
 		delete(orphans, repo.RepoDir())
 
 		localPath := filepath.Join(cfg.CodeDir, repo.RepoDir())
@@ -55,7 +49,7 @@ func SyncRepos(cfg *config.Config) error {
 }
 
 // cloneRepo handles cloning a new repository.
-func cloneRepo(config *config.Config, repo config.Repository, localPath string) error {
+func cloneRepo(config *config.Config, repo *config.Repository, localPath string) error {
 	serverConfig, ok := config.Servers[repo.Server]
 	if !ok {
 		return fmt.Errorf("no server config found for '%s'", repo.Server)
@@ -80,7 +74,7 @@ func cloneRepo(config *config.Config, repo config.Repository, localPath string) 
 }
 
 // updateRepo handles updating an existing local repository.
-func updateRepo(config *config.Config, repo config.Repository, localPath string) error {
+func updateRepo(config *config.Config, repo *config.Repository, localPath string) error {
 	if info, err := os.Stat(filepath.Join(localPath, ".git", "index")); err != nil || info.Size() == 0 {
 		log.Printf("WARNING: Corrupt .git/index found in %s. Removing directory.", localPath)
 		err = os.RemoveAll(localPath)

@@ -10,10 +10,10 @@ import (
 	stdregexp "regexp"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"github.com/freva/codesearch/index"
+	"github.com/freva/codesearch/internal/config"
 	"github.com/freva/codesearch/regexp"
 )
 
@@ -27,8 +27,24 @@ var escapedChars = map[rune]string{
 	'\f': "\\f",
 }
 
-func removePathPrefix(path index.Path) string {
-	return strings.TrimPrefix(path.String(), CONFIG.CodeDir)
+type File struct {
+	Repository *config.Repository
+	Relpath    string
+	WebURL     string
+}
+
+// path must be relative to the serving directory.
+func resolvePath(manifest *config.Manifest, path string) *File {
+	path = strings.TrimPrefix(path, "/")
+	parts := strings.Split(path, "/")
+	if len(parts) >= 3 {
+		prefix := filepath.Join(parts[:3]...)
+		repo, ok := manifest.Repositories[prefix]
+		if ok {
+			return &File{Repository: repo, Relpath: path[len(prefix)+1:], WebURL: manifest.Servers[repo.Server]}
+		}
+	}
+	return nil
 }
 
 func escapeJsonString(str string) string {
@@ -43,14 +59,6 @@ func escapeJsonString(str string) string {
 		}
 	}
 	return result
-}
-
-func indexUpdatedAt() time.Time {
-	stat, err := os.Stat(CONFIG.IndexPath)
-	if err != nil {
-		return time.Unix(0, 0)
-	}
-	return stat.ModTime()
 }
 
 func setHeaders(w http.ResponseWriter) {
@@ -82,14 +90,14 @@ func maybeWriteComma(w http.ResponseWriter, shouldWriteComma bool) error {
 	return err
 }
 
-func writeJsonFileHeader(w http.ResponseWriter, path string, pathRegex *stdregexp.Regexp) error {
-	var file = resolvePath(path)
+func writeJsonFileHeader(w http.ResponseWriter, manifest *config.Manifest, path string, pathRegex *stdregexp.Regexp) error {
+	var file = resolvePath(manifest, path)
 	if file == nil {
 		return fmt.Errorf("Failed to resolve path %s", path)
 	}
 
 	if _, err := w.Write([]byte(fmt.Sprintf("{\"path\":\"%s\",\"directory\":\"%s\",\"repository\":\"%s/%s/%s\",\"branch\":\"%s\"",
-		escapeJsonString(file.Relpath), file.Repository.RepoDir(), file.ResolveServer().WebURL, file.Repository.Owner, file.Repository.Name, file.Repository.Branch))); err != nil {
+		escapeJsonString(file.Relpath), file.Repository.RepoDir(), file.WebURL, file.Repository.Owner, file.Repository.Name, file.Repository.Branch))); err != nil {
 		return err
 	}
 
@@ -103,7 +111,7 @@ func writeJsonFileHeader(w http.ResponseWriter, path string, pathRegex *stdregex
 	return nil
 }
 
-func search(w http.ResponseWriter, query string, fileFilter string, excludeFileFilter string, maxHits int, ignoreCase bool, beforeLines int, afterLines int) error {
+func search(w http.ResponseWriter, manifest *config.Manifest, query string, fileFilter string, excludeFileFilter string, maxHits int, ignoreCase bool, beforeLines int, afterLines int) error {
 	// (?m) => ^ and $ match beginning and end of line, respectively
 	queryPattern := "(?m)" + query
 	if ignoreCase {
@@ -152,7 +160,7 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 	}
 
 	q := index.RegexpQuery(queryRe.Syntax)
-	ix := index.Open(CONFIG.IndexPath)
+	ix := index.Open(CodeIndexPath)
 	ix.Verbose = false
 	var post = ix.PostingQuery(q)
 
@@ -171,7 +179,7 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 		}
 
 		fullPath := ix.Name(fileId)
-		path := removePathPrefix(fullPath)
+		path := strings.TrimPrefix(fullPath.String(), CodeDir+"/")
 
 		if fileRe != nil {
 			// Retain only those files matching the file pattern.
@@ -193,7 +201,7 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 				if err := maybeWriteComma(w, numHits > 0); err != nil {
 					return err
 				}
-				if err := writeJsonFileHeader(w, path, fileStdRe); err != nil {
+				if err := writeJsonFileHeader(w, manifest, path, fileStdRe); err != nil {
 					return err
 				}
 				if _, err := w.Write([]byte(",\"lines\":[")); err != nil {
@@ -237,12 +245,11 @@ func search(w http.ResponseWriter, query string, fileFilter string, excludeFileF
 		}
 	}
 
-	updatedAt := indexUpdatedAt()
-	_, err = w.Write([]byte(fmt.Sprintf("],\"matchedFiles\":%d,\"updatedAt\":%d,\"truncated\":%t}", len(post), updatedAt.Unix(), truncated)))
+	_, err = w.Write([]byte(fmt.Sprintf("],\"matchedFiles\":%d,\"updatedAt\":%d,\"truncated\":%t}", len(post), manifest.UpdatedAt.Unix(), truncated)))
 	return err
 }
 
-func searchFile(w http.ResponseWriter, fileFilter string, excludeFileFilter string, maxHits int, ignoreCase bool) error {
+func searchFile(w http.ResponseWriter, manifest *config.Manifest, fileFilter string, excludeFileFilter string, maxHits int, ignoreCase bool) error {
 	filePattern := "(?m)" + fileFilter
 	if ignoreCase {
 		filePattern = "(?i)" + filePattern
@@ -271,7 +278,7 @@ func searchFile(w http.ResponseWriter, fileFilter string, excludeFileFilter stri
 		}
 	}
 
-	idx := index.Open(CONFIG.FileIndexPath)
+	idx := index.Open(FileIndexPath)
 	idx.Verbose = false
 	query := index.RegexpQuery(fileRe.Syntax)
 	var post = idx.PostingQuery(query)
@@ -290,13 +297,12 @@ func searchFile(w http.ResponseWriter, fileFilter string, excludeFileFilter stri
 			break
 		}
 
-		manifest := idx.Name(fileId)
 		grep := regexp.Grep{Regexp: fileRe, Stderr: os.Stderr}
 		// This is no better than just looping through the lines
 		// of the files and matching (AFAIK), so there's only a
 		// benefit if we don't traverse through all files: Split
 		// up the list of paths in many.  Too many => I/O bound.
-		grep.File2(manifest.String())
+		grep.File2(idx.Name(fileId).String())
 
 		for _, hit := range grep.MatchedLines {
 			path := hit.Line
@@ -311,7 +317,7 @@ func searchFile(w http.ResponseWriter, fileFilter string, excludeFileFilter stri
 			if err := maybeWriteComma(w, numHits > 0); err != nil {
 				return err
 			}
-			if err := writeJsonFileHeader(w, path, fileStdRe); err != nil {
+			if err := writeJsonFileHeader(w, manifest, path, fileStdRe); err != nil {
 				return err
 			}
 			if _, err := w.Write([]byte("}")); err != nil {
@@ -365,12 +371,17 @@ func RestSearchHandler(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 
+		manifest, err := config.ReadManifest(ManifestPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read manifest: %w", err)
+		}
+
 		if query == "" && fileFilter == "" {
 			return fmt.Errorf("No query or file filter")
 		} else if query == "" {
-			return searchFile(w, fileFilter, excludeFileFilter, maxHits, ignoreCase)
+			return searchFile(w, manifest, fileFilter, excludeFileFilter, maxHits, ignoreCase)
 		} else {
-			return search(w, query, fileFilter, excludeFileFilter, maxHits, ignoreCase, before, after)
+			return search(w, manifest, query, fileFilter, excludeFileFilter, maxHits, ignoreCase, before, after)
 		}
 	})
 }
@@ -381,7 +392,7 @@ type MatchedEntry struct {
 	End   int
 }
 
-func restShowFile(w http.ResponseWriter, path string, query string, ignoreCase bool) error {
+func restShowFile(w http.ResponseWriter, manifest *config.Manifest, path string, query string, ignoreCase bool) error {
 	pattern := query
 	if ignoreCase {
 		pattern = "(?i)" + pattern
@@ -391,14 +402,14 @@ func restShowFile(w http.ResponseWriter, path string, query string, ignoreCase b
 		return err
 	}
 
-	file, err := os.Open(filepath.Join(CONFIG.CodeDir, path))
+	file, err := os.Open(filepath.Join(CodeDir, path))
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
 	setHeaders(w)
-	if err := writeJsonFileHeader(w, path, nil); err != nil {
+	if err := writeJsonFileHeader(w, manifest, path, nil); err != nil {
 		return err
 	}
 	if _, err := w.Write([]byte(",\"content\":\"")); err != nil {
@@ -465,6 +476,11 @@ func RestFileHandler(w http.ResponseWriter, request *http.Request) {
 			return fmt.Errorf("Path cannot contain \"..\"")
 		}
 
-		return restShowFile(w, path, query, ignoreCase)
+		manifest, err := config.ReadManifest(ManifestPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read manifest: %w", err)
+		}
+
+		return restShowFile(w, manifest, path, query, ignoreCase)
 	})
 }

@@ -52,18 +52,17 @@ func readManifest(path string) error {
 }
 
 // path must be relative to the serving directory.
-func resolvePath(path string) (*File, error) {
-	prefix := path
+func resolvePath(path string) *File {
+	path = strings.TrimPrefix(path, "/")
 	parts := strings.Split(path, "/")
-	if len(parts) > 3 {
-		prefix = filepath.Join(parts[:4]...)
+	if len(parts) >= 3 {
+		prefix := filepath.Join(parts[:3]...)
+		branch, ok := BRANCHES[prefix]
+		if ok {
+			return &File{Repository: branch, Relpath: path[len(prefix)+1:]}
+		}
 	}
-
-	branch, ok := BRANCHES[prefix]
-	if ok {
-		return &File{Repository: branch, Relpath: path[len(prefix)+1:]}, nil
-	}
-	return nil, fmt.Errorf("no such branch in manifest: %s", prefix)
+	return nil
 }
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {

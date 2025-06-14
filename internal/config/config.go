@@ -2,12 +2,14 @@ package config
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Include struct {
@@ -33,8 +35,8 @@ type Config struct {
 
 	// Global settings
 	CodeDir       string
+	CodeIndexPath string
 	FileIndexPath string
-	IndexPath     string
 	ManifestPath  string
 	Port          int
 	WebDir        string
@@ -61,10 +63,29 @@ func (r Repository) RepoDir() string {
 	return fmt.Sprintf("%s/%s/%s", r.Server, r.Owner, r.Name)
 }
 
+type Manifest struct {
+	Servers      map[string]string      `json:"servers"`      // Server API URL by server name
+	Repositories map[string]*Repository `json:"repositories"` // Repository details by path prefix
+	UpdatedAt    time.Time              `json:"updated_at"`   // Timestamp of the last update
+}
+
 var includePattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(?:/[a-zA-Z0-9-._]+(?:#[^\s]+)?)?$`)
 
-// ParseConfig parses Config from the given path.
-func ParseConfig(path string) (*Config, error) {
+func ReadManifest(path string) (*Manifest, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read manifest at '%s': %w", path, err)
+	}
+
+	var manifest *Manifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal manifest at '%s': %w", path, err)
+	}
+	return manifest, nil
+}
+
+// ReadConfig parses Config from the given path.
+func ReadConfig(path string) (*Config, error) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get absolute path for '%s': %w", path, err)
@@ -85,14 +106,14 @@ func ParseConfig(path string) (*Config, error) {
 		configPath:    absPath,
 		configFileDir: filepath.Dir(absPath),
 	}
-	err = c.parseFile(file)
+	err = c.parseConfig(file)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing config file '%s': %w", absPath, err)
 	}
 	return c, nil
 }
 
-func (c *Config) parseFile(file *os.File) error {
+func (c *Config) parseConfig(file *os.File) error {
 	// Regex for parsing section headers, e.g., [server github]
 	sectionRegex := regexp.MustCompile(`^\s*\[\s*(server)\s+([^]]+)\s*]`)
 	// Regex for parsing key-value pairs, e.g., workdir = /path/to/db
@@ -168,8 +189,8 @@ func (c *Config) parseFile(file *os.File) error {
 	if c.FileIndexPath == "" {
 		c.FileIndexPath = filepath.Join(c.WorkDir, "csearch.fileindex")
 	}
-	if c.IndexPath == "" {
-		c.IndexPath = filepath.Join(c.WorkDir, "csearch.index")
+	if c.CodeIndexPath == "" {
+		c.CodeIndexPath = filepath.Join(c.WorkDir, "csearch.index")
 	}
 	if c.ManifestPath == "" {
 		c.ManifestPath = filepath.Join(c.WorkDir, "manifest.json")
@@ -178,17 +199,8 @@ func (c *Config) parseFile(file *os.File) error {
 	return scanner.Err()
 }
 
-// GetServer returns configuration for the given server name.
-func (c *Config) GetServer(name string) (*Server, error) {
-	server, ok := c.Servers[name]
-	if !ok {
-		return nil, fmt.Errorf("no such server in configuration: %s", name)
-	}
-	return server, nil
-}
-
-// ConfigHelp provides the help text describing the config file format.
-func ConfigHelp() string {
+// Help provides the help text describing the config file format.
+func Help() string {
 	return `The config file has the following format:
 
   config-file: global-section section*
@@ -225,7 +237,7 @@ func (c *Config) parseGlobalVar(key, value, loc string) (err error) {
 	case "fileindex":
 		c.FileIndexPath, err = c.resolvePath(value)
 	case "index":
-		c.IndexPath, err = c.resolvePath(value)
+		c.CodeIndexPath, err = c.resolvePath(value)
 	case "manifest":
 		c.ManifestPath, err = c.resolvePath(value)
 	case "webdir":

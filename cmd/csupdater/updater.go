@@ -18,6 +18,7 @@ type AppArgs struct {
 	DoManifest bool
 	DoSync     bool
 	DoIndex    bool
+	Verbose    bool
 	HelpConfig bool
 }
 
@@ -27,6 +28,7 @@ func main() {
 	flag.BoolVar(&args.DoManifest, "manifest", false, "Update the manifest (only).")
 	flag.BoolVar(&args.DoSync, "sync", false, "Synchronize git repos (only).")
 	flag.BoolVar(&args.DoIndex, "index", false, "Update the search indices (only).")
+	flag.BoolVar(&args.Verbose, "verbose", false, "Enable verbose output.")
 	flag.BoolVar(&args.HelpConfig, "help-config", false, "Show help for the config file format.")
 
 	flag.Usage = func() {
@@ -69,19 +71,19 @@ func run(args AppArgs) error {
 	}
 
 	if args.DoManifest {
-		if err := updateManifest(cfg); err != nil {
+		if err := updateManifest(cfg, args.Verbose); err != nil {
 			return fmt.Errorf("manifest update failed: %w", err)
 		}
 	}
 
 	if args.DoSync {
-		if err := SyncRepos(cfg); err != nil {
+		if err := SyncRepos(cfg, args.Verbose); err != nil {
 			return fmt.Errorf("repository sync failed: %w", err)
 		}
 	}
 
 	if args.DoIndex {
-		if err := UpdateIndices(cfg); err != nil {
+		if err := UpdateIndices(cfg, args.Verbose); err != nil {
 			return fmt.Errorf("indexing failed: %w", err)
 		}
 	}
@@ -89,8 +91,9 @@ func run(args AppArgs) error {
 	return nil
 }
 
-func updateManifest(cfg *config.Config) error {
-	repos, err := GetAllRepositories(cfg)
+func updateManifest(cfg *config.Config, verbose bool) error {
+	start := time.Now()
+	repos, err := GetAllRepositories(cfg, verbose)
 	if err != nil {
 		return fmt.Errorf("could not fetch repositories: %w", err)
 	}
@@ -114,6 +117,7 @@ func updateManifest(cfg *config.Config) error {
 	if err := atomicWriteFile(cfg.ManifestPath, serialized); err != nil {
 		return fmt.Errorf("could not write manifest file: %w", err)
 	}
+	log.Printf("Found %d repositories for %d servers in %s.\n", len(repos), len(cfg.Servers), time.Since(start).Round(10*time.Millisecond))
 	return nil
 }
 

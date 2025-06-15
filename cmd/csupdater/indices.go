@@ -3,16 +3,19 @@ package main
 import (
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/freva/codesearch/index"
 	"github.com/freva/codesearch/internal/config"
 )
 
 // UpdateIndices update file indexes and the main code search index.
-func UpdateIndices(config *config.Config) error {
+func UpdateIndices(config *config.Config, verbose bool) error {
+	start := time.Now()
 	const maxLines = 128
 	var lineCounter int
 	var currentFile *os.File
@@ -27,11 +30,11 @@ func UpdateIndices(config *config.Config) error {
 	}
 
 	codeIndex := index.Create(config.CodeIndexPath + "~")
-	codeIndex.LogSkip = false
+	codeIndex.LogSkip = verbose
 	codeIndex.AddRoots([]index.Path{index.MakePath(config.CodeDir)})
 	fileIndex := index.Create(config.FileIndexPath + "~")
 	fileIndex.AddRoots([]index.Path{index.MakePath(fileListsPath)})
-	fileIndex.LogSkip = false
+	fileIndex.LogSkip = verbose
 
 	writeToIndex := func() error {
 		if currentFile == nil {
@@ -79,6 +82,7 @@ func UpdateIndices(config *config.Config) error {
 		return fmt.Errorf("failed to rename file index file: %w", err)
 	}
 
+	log.Printf("Indexed %d paths in %s.\n", lineCounter, time.Since(start).Round(10*time.Millisecond))
 	return nil
 }
 

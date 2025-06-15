@@ -71,7 +71,7 @@ query GetRepositories($owner: String!, $cursor: String) {
 var commitShaRegex = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 // GetAllRepositories resolves all repositories from the configuration.
-func GetAllRepositories(cfg *config.Config) ([]config.Repository, error) {
+func GetAllRepositories(cfg *config.Config, verbose bool) ([]config.Repository, error) {
 	// Use a map to handle duplicates and easily update entries. Key is "server/owner/repo"
 	repoMap := make(map[string]config.Repository)
 	client := &http.Client{Timeout: 30 * time.Second}
@@ -90,6 +90,9 @@ func GetAllRepositories(cfg *config.Config) ([]config.Repository, error) {
 
 		// Fetch all repos for the specified owners
 		for _, owner := range ownersToFetch {
+			if verbose {
+				fmt.Printf("Fetching repositories for server '%s' and owner '%s'\n", server.Name, owner)
+			}
 			err := fetchReposForOwner(client, server, owner, repoMap)
 			if err != nil {
 				return nil, fmt.Errorf("could not fetch repos for '%s': %w", owner, err)
@@ -98,6 +101,9 @@ func GetAllRepositories(cfg *config.Config) ([]config.Repository, error) {
 
 		// Fetch all specific repos in a single batch request
 		if len(specificsToFetch) > 0 {
+			if verbose {
+				fmt.Printf("Fetching repositories for server '%s': %s\n", server.Name, specificsToFetch)
+			}
 			err := fetchSpecificRepos(client, server, specificsToFetch, repoMap)
 			if err != nil {
 				return nil, fmt.Errorf("could not fetch specific repos: %w", err)

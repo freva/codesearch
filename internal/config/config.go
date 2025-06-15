@@ -18,6 +18,16 @@ type Include struct {
 	Ref   string // The branch or commit
 }
 
+func (in Include) String() string {
+	if in.Name == "" {
+		return in.Owner // Just the owner
+	}
+	if in.Ref == "" {
+		return fmt.Sprintf("%s/%s", in.Owner, in.Name) // Owner/Repo
+	}
+	return fmt.Sprintf("%s/%s#%s", in.Owner, in.Name, in.Ref) // Owner/Repo#Ref
+}
+
 // Server holds configuration for a git server
 type Server struct {
 	Name    string

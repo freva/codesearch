@@ -11,12 +11,15 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/hakonhall/codesearch/internal/config"
 )
 
 // SyncRepos clones new repos, updates existing ones, and removes any that are no longer needed.
-func SyncRepos(cfg *config.Config) error {
+func SyncRepos(cfg *config.Config, verbose bool) error {
+	start := time.Now()
+	var cloned, updated, noop int
 	manifest, err := config.ReadManifest(cfg.ManifestPath)
 	if err != nil {
 		return err
@@ -31,25 +34,42 @@ func SyncRepos(cfg *config.Config) error {
 		delete(orphans, repo.RepoDir())
 
 		localPath := filepath.Join(cfg.CodeDir, repo.RepoDir())
-		if _, err := os.Stat(localPath); os.IsNotExist(err) {
-			err := cloneRepo(cfg, repo, localPath)
-			if err != nil {
-				return fmt.Errorf("ERROR: Failed to clone %s: %w", repo.RepoDir(), err)
-			}
-		} else {
-			err := updateRepo(cfg, repo, localPath)
-			if err != nil {
-				return fmt.Errorf("ERROR: Failed to update %s: %w", repo.RepoDir(), err)
+		if _, err := os.Stat(localPath); err == nil {
+			if info, err := os.Stat(filepath.Join(localPath, ".git", "index")); err != nil || info.Size() == 0 {
+				log.Printf("WARNING: Corrupt .git/index found in %s. Removing directory.", localPath)
+				err = os.RemoveAll(localPath)
+				if err != nil {
+					return fmt.Errorf("failed to remove corrupt repository: %w", err)
+				}
+			} else {
+				hasUpdated, err := updateRepo(repo, localPath, verbose)
+				if err != nil {
+					return fmt.Errorf("ERROR: Failed to update %s: %w", repo.RepoDir(), err)
+				}
+				if hasUpdated {
+					updated++
+				} else {
+					noop++
+				}
+				continue
 			}
 		}
+		cloned++
+		err := cloneRepo(cfg, repo, localPath, verbose)
+		if err != nil {
+			return fmt.Errorf("ERROR: Failed to clone %s: %w", repo.RepoDir(), err)
+		}
+
 	}
 
 	cleanupOrphans(orphans, cfg.CodeDir)
+	log.Printf("Synced %d repositories: %d new, %d updated, %d unchanged in %s.\n",
+		cloned+updated+noop, cloned, updated, noop, time.Since(start).Round(10*time.Millisecond))
 	return nil
 }
 
 // cloneRepo handles cloning a new repository.
-func cloneRepo(config *config.Config, repo *config.Repository, localPath string) error {
+func cloneRepo(config *config.Config, repo *config.Repository, localPath string, verbose bool) error {
 	serverConfig, ok := config.Servers[repo.Server]
 	if !ok {
 		return fmt.Errorf("no server config found for '%s'", repo.Server)
@@ -60,46 +80,46 @@ func cloneRepo(config *config.Config, repo *config.Repository, localPath string)
 		return fmt.Errorf("could not build clone URL: %w", err)
 	}
 
-	log.Printf("%s: Cloning", repo.RepoDir())
+	if verbose {
+		log.Printf("%s: Cloning", repo.RepoDir())
+	}
 	if err := os.MkdirAll(filepath.Dir(localPath), 0755); err != nil {
 		return err
 	}
 
-	err = runGitCommand("clone", cloneURL, localPath)
+	err = runGitCommand(verbose, "clone", cloneURL, localPath)
 	if err != nil {
 		return err
 	}
 
-	return runGitCommand("-C", localPath, "checkout", "--quiet", repo.Commit)
+	return runGitCommand(verbose, "-C", localPath, "checkout", repo.Commit)
 }
 
-// updateRepo handles updating an existing local repository.
-func updateRepo(config *config.Config, repo *config.Repository, localPath string) error {
-	if info, err := os.Stat(filepath.Join(localPath, ".git", "index")); err != nil || info.Size() == 0 {
-		log.Printf("WARNING: Corrupt .git/index found in %s. Removing directory.", localPath)
-		err = os.RemoveAll(localPath)
-		if err != nil {
-			return fmt.Errorf("failed to remove corrupt repository: %w", err)
-		}
-		return cloneRepo(config, repo, localPath)
-	}
-
+// updateRepo handles updating an existing local repository. Returns true if the repo was updated, false if it was already up-to-date.
+func updateRepo(repo *config.Repository, localPath string, verbose bool) (bool, error) {
 	output, err := exec.Command("git", "-C", localPath, "rev-parse", "HEAD").CombinedOutput()
 	if err != nil {
 		log.Printf("could not determine current commit: %v", err)
 	} else if strings.TrimSpace(string(output)) == repo.Commit {
-		log.Printf("%s: Already up-to-date", repo.RepoDir())
-		return nil
+		if verbose {
+			log.Printf("%s: Already up-to-date", repo.RepoDir())
+		}
+		return false, nil
 	}
 
-	log.Printf("%s: Updating", repo.RepoDir())
-	if err := runGitCommand("-C", localPath, "fetch", "--quiet"); err != nil {
-		return err
+	if verbose {
+		log.Printf("%s: Updating", repo.RepoDir())
 	}
-	return runGitCommand("-C", localPath, "checkout", "--quiet", repo.Commit)
+	if err := runGitCommand(verbose, "-C", localPath, "fetch"); err != nil {
+		return false, err
+	}
+	return true, runGitCommand(verbose, "-C", localPath, "checkout", repo.Commit)
 }
 
-func runGitCommand(args ...string) error {
+func runGitCommand(verbose bool, args ...string) error {
+	if !verbose {
+		args = append([]string{"--quiet"}, args...)
+	}
 	cmd := exec.Command("git", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

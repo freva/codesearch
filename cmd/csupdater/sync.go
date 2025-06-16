@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/url"
@@ -120,12 +121,19 @@ func runGitCommand(verbose bool, args ...string) error {
 	if !verbose {
 		args = append([]string{"--quiet"}, args...)
 	}
+
+	var outputBuf bytes.Buffer
 	cmd := exec.Command("git", args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if verbose {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	} else {
+		cmd.Stdout = &outputBuf
+		cmd.Stderr = &outputBuf
+	}
 	err := cmd.Run()
 	if err != nil {
-		return fmt.Errorf("git %+q failed: %w", args, err)
+		return fmt.Errorf("git %+q failed: %w\nOutput: %s\n", args, err, outputBuf.String())
 	}
 	return nil
 }

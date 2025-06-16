@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -26,11 +27,23 @@ var (
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
 	file := "index.html"
-	if strings.HasPrefix(r.URL.Path, "/static/") || strings.HasPrefix(r.URL.Path, "/assets/") {
+	if strings.HasPrefix(r.URL.Path, "/assets/") {
 		file = r.URL.Path
 	}
 
 	http.ServeFile(w, r, filepath.Join(WebDir, file))
+}
+
+func manifestHandler(w http.ResponseWriter, r *http.Request) {
+	handleError(w, func() error {
+		manifest, err := config.ReadManifest(ManifestPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read manifest: %w", err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		return json.NewEncoder(w).Encode(manifest)
+	})
 }
 
 func main() {
@@ -59,6 +72,7 @@ Start HTTP server, serving a search and view interface of a source tree.`)
 	}
 
 	http.HandleFunc("/", staticHandler)
+	http.HandleFunc("/rest/manifest", manifestHandler)
 	http.HandleFunc("/rest/file", RestFileHandler)
 	http.HandleFunc("/rest/search", RestSearchHandler)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil); err != nil {

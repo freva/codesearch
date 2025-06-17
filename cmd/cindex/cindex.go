@@ -13,7 +13,7 @@ import (
 	"runtime/pprof"
 	"slices"
 
-	"github.com/google/codesearch/index"
+	"github.com/freva/codesearch/index"
 )
 
 var usageMessage = `usage: cindex [-list] [-reset] [-zip] [path...]

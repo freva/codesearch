@@ -1,3 +1,3 @@
-module github.com/google/codesearch
+module github.com/freva/codesearch
 
 go 1.23

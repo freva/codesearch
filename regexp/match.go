@@ -17,7 +17,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/codesearch/sparse"
+	"github.com/freva/codesearch/sparse"
 )
 
 // A matcher holds the state for running regular expression search.

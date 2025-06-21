@@ -30,13 +30,13 @@ func (in Include) String() string {
 
 // Server holds configuration for a git server
 type Server struct {
-	Name    string
-	API     string
-	URL     string
-	WebURL  string
-	Token   string
-	Exclude regexp.Regexp
-	Include []Include
+	Name     string
+	ApiURL   string
+	CloneURL string
+	WebURL   string
+	Token    string
+	Exclude  string
+	Include  []Include
 }
 
 // Config is the top-level struct holding all parsed configuration
@@ -47,10 +47,10 @@ type Config struct {
 	CodeDir       string
 	CodeIndexPath string
 	FileIndexPath string
+	FileListsDir  string
 	ManifestPath  string
 	Port          int
 	WebDir        string
-	WorkDir       string
 
 	// Sections
 	Servers map[string]*Server
@@ -58,6 +58,7 @@ type Config struct {
 	// --- Private Fields ---
 	configPath    string // Absolute path to the config file
 	configFileDir string // Directory of the config file
+	workDir       string // Directory to resolve all relative paths in config against
 }
 
 // Repository represents a resolved repository with its source details.
@@ -79,7 +80,7 @@ type Manifest struct {
 	UpdatedAt    time.Time              `json:"updated_at"`   // Timestamp of the last update
 }
 
-var includePattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(?:/[a-zA-Z0-9-._]+(?:#[^\s]+)?)?$`)
+var includePattern = regexp.MustCompile(`^[a-zA-Z0-9-]+(?:/[a-zA-Z0-9-._]+(?:#\S+)?)?$`)
 
 func ReadManifest(path string) (*Manifest, error) {
 	data, err := os.ReadFile(path)
@@ -152,7 +153,7 @@ func (c *Config) parseConfig(file *os.File) error {
 
 			switch sectionType {
 			case "server":
-				currentServer = &Server{Name: sectionName}
+				currentServer = &Server{Name: sectionName, ApiURL: "https://api.github.com", WebURL: "https://github.com"}
 				c.Servers[sectionName] = currentServer
 			}
 		} else if matches := assignRegex.FindStringSubmatch(line); len(matches) == 3 {
@@ -176,34 +177,31 @@ func (c *Config) parseConfig(file *os.File) error {
 	}
 
 	for name, server := range c.Servers {
-		if server.API == "" {
-			return fmt.Errorf("%s: server '%s' missing required 'api' setting", c.configPath, name)
-		}
-		if server.URL == "" {
+		if server.CloneURL == "" {
 			return fmt.Errorf("%s: server '%s' missing required 'url' setting", c.configPath, name)
-		}
-		if server.WebURL == "" {
-			return fmt.Errorf("%s: server '%s' missing required 'weburl' setting", c.configPath, name)
 		}
 	}
 
 	if c.WebDir == "" {
 		return fmt.Errorf("%s: missing required 'webdir' setting", c.configPath)
 	}
-	if c.WorkDir == "" {
+	if c.workDir == "" {
 		return fmt.Errorf("%s: missing required 'workdir' setting", c.configPath)
 	}
 	if c.CodeDir == "" {
-		c.CodeDir = filepath.Join(c.WorkDir, "code")
+		c.CodeDir = filepath.Join(c.workDir, "code")
 	}
 	if c.FileIndexPath == "" {
-		c.FileIndexPath = filepath.Join(c.WorkDir, "csearch.fileindex")
+		c.FileIndexPath = filepath.Join(c.workDir, "csearch.fileindex")
+	}
+	if c.FileListsDir == "" {
+		c.FileListsDir = filepath.Join(c.workDir, "filelists")
 	}
 	if c.CodeIndexPath == "" {
-		c.CodeIndexPath = filepath.Join(c.WorkDir, "csearch.index")
+		c.CodeIndexPath = filepath.Join(c.workDir, "csearch.index")
 	}
 	if c.ManifestPath == "" {
-		c.ManifestPath = filepath.Join(c.WorkDir, "manifest.json")
+		c.ManifestPath = filepath.Join(c.workDir, "manifest.json")
 	}
 
 	return scanner.Err()
@@ -226,18 +224,18 @@ Global settings:
   'manifest': Path to the manifest file. [workdir/manifest.json]
   'webdir': Path to freva/codesearch/cmd/cserver/static. Required.
   'workdir': The working directory owned and managed by this program. Required.
+Relative paths are resolved relative to the config file.
 The 'server' section names a GitHub server and allows these settings:
-  'api': URL to GitHub REST API.**
+  'api': URL to GitHub REST API. [https://api.github.com]
   'exclude': Excludes all ORG/REPO matching the regex. At most 1.
   'include': Either
              OWNER - user/organisation name, will check out all of their repositories, or
              OWNER/REPO - a specific repository, or
              OWNER/REPO#BRANCH - a specific repository at a specific branch, or
-			 OWNER/REPO#REF - a specific repository at a specific commit.
+             OWNER/REPO#REF - a specific repository at a specific commit.
   'token': An OAuth2 token, e.g. a personal access token.
-  'url': Base URL for cloning: git@github.com, https://github.com. Required.
-*) The path is relative to the config file, if relative.
-**) Required for some operations.`
+  'weburl': URL to the web interface of the server. [https://github.com]
+  'url': Base URL for cloning: git@github.com, https://github.com. Required.`
 }
 
 func (c *Config) parseGlobalVar(key, value, loc string) (err error) {
@@ -246,6 +244,8 @@ func (c *Config) parseGlobalVar(key, value, loc string) (err error) {
 		c.CodeDir, err = c.resolvePath(value)
 	case "fileindex":
 		c.FileIndexPath, err = c.resolvePath(value)
+	case "filelists":
+		c.FileListsDir, err = c.resolvePath(value)
 	case "index":
 		c.CodeIndexPath, err = c.resolvePath(value)
 	case "manifest":
@@ -253,7 +253,7 @@ func (c *Config) parseGlobalVar(key, value, loc string) (err error) {
 	case "webdir":
 		c.WebDir, err = c.resolvePath(value)
 	case "workdir":
-		c.WorkDir, err = c.resolvePath(value)
+		c.workDir, err = c.resolvePath(value)
 	case "port":
 		c.Port, err = strconv.Atoi(value)
 		if err != nil {
@@ -283,19 +283,19 @@ func (c *Config) resolvePath(p string) (string, error) {
 func (c *Config) parseServerVar(s *Server, key, value, loc string) error {
 	switch key {
 	case "api":
-		s.API = value
+		s.ApiURL = value
 	case "url":
-		s.URL = value
+		s.CloneURL = value
 	case "weburl":
 		s.WebURL = value
 	case "token":
 		s.Token = value
 	case "exclude":
-		exclude, err := regexp.Compile(value)
+		_, err := regexp.Compile(value)
 		if err != nil {
 			return fmt.Errorf("%s: invalid regex for 'exclude': %w", loc, err)
 		}
-		s.Exclude = *exclude
+		s.Exclude = value
 	case "include":
 		if !includePattern.MatchString(value) {
 			return fmt.Errorf("%s: invalid include format: %s", loc, value)
@@ -321,7 +321,7 @@ func (c *Config) parseServerVar(s *Server, key, value, loc string) error {
 
 		s.Include = append(s.Include, Include{Owner: owner, Name: name, Ref: ref})
 	default:
-		return fmt.Errorf("%s: unknown key '%s'", loc, key)
+		return fmt.Errorf("%s: unknown key '%s' in server '%s'", loc, key, s.Name)
 	}
 	return nil
 }

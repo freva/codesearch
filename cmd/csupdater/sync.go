@@ -76,7 +76,7 @@ func cloneRepo(config *config.Config, repo *config.Repository, localPath string,
 		return fmt.Errorf("no server config found for '%s'", repo.Server)
 	}
 
-	cloneURL, err := buildCloneURL(serverConfig.URL, repo.Owner, repo.Name)
+	cloneURL, err := buildCloneURL(serverConfig.CloneURL, repo.Owner, repo.Name)
 	if err != nil {
 		return fmt.Errorf("could not build clone URL: %w", err)
 	}

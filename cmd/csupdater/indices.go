@@ -21,7 +21,7 @@ func UpdateIndices(config *config.Config, verbose bool) error {
 	var currentFile *os.File
 	var err error
 
-	fileListsPath := filepath.Join(config.WorkDir, "filelists")
+	fileListsPath := filepath.Join(config.FileListsDir)
 	if err := os.RemoveAll(fileListsPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove old file lists directory '%s': %w", fileListsPath, err)
 	}

@@ -132,6 +132,7 @@ func fetchReposForOwner(
 	repoMap map[string]config.Repository,
 ) error {
 	var cursor *string
+	exclude := regexp.MustCompile(server.Exclude)
 	for {
 		reqBody, _ := json.Marshal(graphQLRequest{
 			Query:     ownerRepositoriesQuery,
@@ -149,7 +150,7 @@ func fetchReposForOwner(
 				continue
 			}
 			fullName := fmt.Sprintf("%s/%s", owner, node.Name)
-			if server.Exclude.MatchString(fullName) {
+			if server.Exclude != "" && exclude.MatchString(fullName) {
 				continue
 			}
 
@@ -179,13 +180,14 @@ func fetchSpecificRepos(
 	repoMap map[string]config.Repository,
 ) error {
 	var b strings.Builder
+	exclude := regexp.MustCompile(server.Exclude)
 	b.WriteString("query {")
 
 	// Build the dynamic query with aliases
 	for i, r := range requests {
 		// Check for exclusion before adding to the query
 		fullName := fmt.Sprintf("%s/%s", r.Owner, r.Name)
-		if server.Exclude.MatchString(fullName) {
+		if server.Exclude != "" && exclude.MatchString(fullName) {
 			continue
 		}
 
@@ -252,9 +254,9 @@ func fetchSpecificRepos(
 }
 
 func executeGraphQLQuery[T any](client *http.Client, server *config.Server, body []byte) (*T, error) {
-	apiURL, err := url.Parse(server.API)
+	apiURL, err := url.Parse(server.ApiURL)
 	if err != nil {
-		return nil, fmt.Errorf("invalid API URL '%s': %w", server.API, err)
+		return nil, fmt.Errorf("invalid API URL '%s': %w", server.ApiURL, err)
 	}
 	apiURL.Path = "/graphql"
 
@@ -293,7 +295,7 @@ func executeGraphQLQuery[T any](client *http.Client, server *config.Server, body
 
 	var gqlData T
 	if err := json.Unmarshal(gqlResp.Data, &gqlData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal 'data' field into gqlData struct: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal 'data' field: %w", err)
 	}
 
 	return &gqlData, nil

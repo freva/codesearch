@@ -70,6 +70,13 @@ func run(args AppArgs) error {
 		return fmt.Errorf("could not parse cfg file: %w", err)
 	}
 
+	paths := []string{path.Dir(cfg.CodeIndexPath), path.Dir(cfg.FileIndexPath), path.Dir(cfg.ManifestPath), cfg.CodeDir}
+	for _, p := range paths {
+		if err := os.MkdirAll(p, 0755); err != nil {
+			return fmt.Errorf("could not create directory '%s': %w", p, err)
+		}
+	}
+
 	if args.DoManifest {
 		if err := updateManifest(cfg, args.Verbose); err != nil {
 			return fmt.Errorf("manifest update failed: %w", err)

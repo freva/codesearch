@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -17,6 +18,27 @@ import (
 	"github.com/freva/codesearch/internal/config"
 )
 
+type IShellCommand interface {
+	CombinedOutput() ([]byte, error)
+	Run(stdout io.Writer, stderr io.Writer) error
+}
+type execShellCommand struct {
+	cmd *exec.Cmd
+}
+
+func (exc execShellCommand) CombinedOutput() ([]byte, error) {
+	return exc.cmd.CombinedOutput()
+}
+func (exc execShellCommand) Run(stdout io.Writer, stderr io.Writer) error {
+	exc.cmd.Stdout = stdout
+	exc.cmd.Stderr = stderr
+	return exc.cmd.Run()
+}
+
+var command = func(name string, arg ...string) IShellCommand {
+	return execShellCommand{cmd: exec.Command(name, arg...)}
+}
+
 // SyncRepos clones new repos, updates existing ones, and removes any that are no longer needed.
 func SyncRepos(cfg *config.Config, verbose bool) error {
 	start := time.Now()
@@ -26,7 +48,7 @@ func SyncRepos(cfg *config.Config, verbose bool) error {
 		return err
 	}
 
-	orphans, err := listWithMaxDepth(cfg.CodeDir, 2)
+	orphans, err := listWithMaxDepth(cfg.CodeDir, 3)
 	if err != nil {
 		return fmt.Errorf("could not scan for orphaned directories: %w", err)
 	}
@@ -98,7 +120,7 @@ func cloneRepo(config *config.Config, repo *config.Repository, localPath string,
 
 // updateRepo handles updating an existing local repository. Returns true if the repo was updated, false if it was already up-to-date.
 func updateRepo(repo *config.Repository, localPath string, verbose bool) (bool, error) {
-	output, err := exec.Command("git", "-C", localPath, "rev-parse", "HEAD").CombinedOutput()
+	output, err := command("git", "-C", localPath, "rev-parse", "HEAD").CombinedOutput()
 	if err != nil {
 		log.Printf("could not determine current commit: %v", err)
 	} else if strings.TrimSpace(string(output)) == repo.Commit {
@@ -119,15 +141,13 @@ func updateRepo(repo *config.Repository, localPath string, verbose bool) (bool, 
 
 func runGitCommand(verbose bool, args ...string) error {
 	var outputBuf bytes.Buffer
-	cmd := exec.Command("git", args...)
+	cmd := command("git", args...)
+	var err error
 	if verbose {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		err = cmd.Run(os.Stdout, os.Stderr)
 	} else {
-		cmd.Stdout = &outputBuf
-		cmd.Stderr = &outputBuf
+		err = cmd.Run(&outputBuf, &outputBuf)
 	}
-	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("git %+q failed: %w\nOutput: %s\n", args, err, outputBuf.String())
 	}
@@ -201,7 +221,7 @@ func listWithMaxDepth(root string, maxDepth int) (map[string]bool, error) {
 
 		delete(paths, filepath.Dir(relPath))
 		paths[relPath] = true
-		if d.IsDir() && strings.Count(relPath, string(os.PathSeparator)) == maxDepth {
+		if d.IsDir() && strings.Count(relPath, string(os.PathSeparator)) == maxDepth-1 {
 			return filepath.SkipDir
 		}
 		return nil

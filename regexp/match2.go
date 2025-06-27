@@ -3,10 +3,11 @@ package regexp
 import (
 	"bufio"
 	"fmt"
-	"github.com/freva/codesearch/index"
 	"io"
 	"iter"
 	"os"
+
+	"github.com/freva/codesearch/index"
 )
 
 type LineMatch struct {
@@ -19,7 +20,7 @@ func FindMatches(name index.Path, regexp *Regexp, beforeLines int, afterLines in
 	return func(yield func(match LineMatch) bool) {
 		file, err := os.Open(name.String())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to open file: %w", err)
+			fmt.Fprintf(os.Stderr, "failed to open file: %v", err)
 			return
 		}
 		defer file.Close()
@@ -37,7 +38,7 @@ func FindMatches(name index.Path, regexp *Regexp, beforeLines int, afterLines in
 			if err == io.EOF {
 				eof = true
 			} else if err != nil {
-				fmt.Fprintf(os.Stderr, "failed to read line: %w", err)
+				fmt.Fprintf(os.Stderr, "failed to read line: %v", err)
 				return
 			}
 
@@ -60,7 +61,6 @@ func FindMatches(name index.Path, regexp *Regexp, beforeLines int, afterLines in
 				prevLines.Enqueue(line)
 			}
 			lineno++
-
 		}
 	}
 }

@@ -26,11 +26,14 @@ export type SearchResult = {
   files: File[];
   truncated: boolean;
   hits: number;
+  matchedFiles: number;
+  updatedAt: number;
 };
 export type LineMatch = { line: number; range: Range };
 export type FileResult = FileHeader & {
   content: string;
   matches: LineMatch[];
+  updatedAt: number;
 };
 
 type HttpResultState<T> = {

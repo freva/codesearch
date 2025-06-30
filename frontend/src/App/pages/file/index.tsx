@@ -2,14 +2,7 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CodeHighlight } from './code-highlight';
-import {
-  Alert,
-  Breadcrumbs,
-  Container,
-  Flex,
-  Loader,
-  Text,
-} from '@mantine/core';
+import { Alert, Breadcrumbs, Flex, Loader, Text } from '@mantine/core';
 import type { LineMatch } from '../store';
 import { useSearchContext } from '../store';
 
@@ -78,7 +71,7 @@ export function File(): ReactNode {
     );
 
   return (
-    <Container fluid>
+    <div className="container">
       <Breadcrumbs fz="lg" my="sm">
         {`${result!.directory}/${result!.path}`
           .split('/')
@@ -100,6 +93,6 @@ export function File(): ReactNode {
         path={result!.path}
         ranges={result!.matches}
       />
-    </Container>
+    </div>
   );
 }

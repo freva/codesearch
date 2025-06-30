@@ -85,15 +85,19 @@ export function useGet<T, U = T>(
   return { ...state, refresh };
 }
 
+export function backendUrl(): string {
+  return (
+    window.localStorage.getItem('code-search-backend') ??
+    'http://localhost:8080'
+  );
+}
+
 async function Fetch<T>(
   method: Method,
   url: string,
   params: Params = {},
 ): Promise<T> {
-  const api =
-    window.localStorage.getItem('code-search-backend') ??
-    'http://localhost:8080';
-  if (!url.match(/^[A-Za-z]+:\/\//)) url = api + url;
+  if (!url.match(/^[A-Za-z]+:\/\//)) url = backendUrl() + url;
 
   params = { ...params }; // Copy to avoid mutating the original
   params.method = method;

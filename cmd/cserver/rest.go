@@ -174,7 +174,6 @@ func search(w http.ResponseWriter, manifest *config.Manifest, query string, file
 
 	for _, fileId := range post {
 		if numHits >= maxHits {
-			truncated = true
 			break
 		}
 
@@ -245,7 +244,7 @@ func search(w http.ResponseWriter, manifest *config.Manifest, query string, file
 		}
 	}
 
-	_, err = w.Write([]byte(fmt.Sprintf("],\"matchedFiles\":%d,\"updatedAt\":%d,\"truncated\":%t}", len(post), manifest.UpdatedAt.Unix(), truncated)))
+	_, err = w.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"truncated\":%t,\"matchedFiles\":%d,\"updatedAt\":%d}", numHits, truncated, len(post), manifest.UpdatedAt.UnixMilli())))
 	return err
 }
 
@@ -332,7 +331,7 @@ func searchFile(w http.ResponseWriter, manifest *config.Manifest, fileFilter str
 		}
 	}
 
-	_, err = w.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"truncated\":%t}", numHits, truncated)))
+	_, err = w.Write([]byte(fmt.Sprintf("],\"hits\":%d,\"truncated\":%t,\"matchedFiles\":%d,\"updatedAt\":%d}", numHits, truncated, len(post), manifest.UpdatedAt.UnixMilli())))
 	return err
 }
 
@@ -455,7 +454,7 @@ func restShowFile(w http.ResponseWriter, manifest *config.Manifest, path string,
 		}
 	}
 
-	if _, err = w.Write([]byte("]}")); err != nil {
+	if _, err = w.Write([]byte(fmt.Sprintf("],\"updatedAt\":%d}", manifest.UpdatedAt.UnixMilli()))); err != nil {
 		return err
 	}
 

@@ -11,6 +11,7 @@ import { File } from './pages/file';
 import { Header } from './layout/header';
 import { SearchContextProvider } from './pages/store';
 import { KeyboardShortcuts } from './pages/keyboard/keyboard-shortcuts';
+import { Footer } from './layout/footer.tsx';
 
 export default function App(): ReactNode {
   return (
@@ -24,6 +25,7 @@ export default function App(): ReactNode {
               <Route path="/file/*" element={<File />} />
               <Route path="*" element={<Search />} />
             </Routes>
+            <Footer />
           </SearchContextProvider>
         </ErrorBoundary>
       </MantineProvider>

@@ -2,7 +2,7 @@
 Description=Codesearch index updater
 
 [Service]
-ExecStart=%h/.go/bin/csupdater --config %h/dev/codesearch/config
+ExecStart=%h/.go/bin/csupdater --config %h/dev/codesearch/config --exit-early
 Restart=always
 RestartSec=60
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 	"time"
 
 	"github.com/freva/codesearch/internal/config"
@@ -19,6 +20,7 @@ type AppArgs struct {
 	DoSync     bool
 	DoIndex    bool
 	Verbose    bool
+	ExitEarly  bool
 	HelpConfig bool
 }
 
@@ -29,10 +31,11 @@ func main() {
 	flag.BoolVar(&args.DoSync, "sync", false, "Synchronize git repos (only).")
 	flag.BoolVar(&args.DoIndex, "index", false, "Update the search indices (only).")
 	flag.BoolVar(&args.Verbose, "verbose", false, "Enable verbose output.")
+	flag.BoolVar(&args.ExitEarly, "exit-early", false, "Skips sync & index if manifest was unchanged.")
 	flag.BoolVar(&args.HelpConfig, "help-config", false, "Show help for the config file format.")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `Usage: updater [OPTION...]
+		_, _ = fmt.Fprintf(os.Stderr, `Usage: updater [OPTION...]
 Update the manifest, synchronize the git repos, and update the indices.
 
 Options:
@@ -78,8 +81,12 @@ func run(args AppArgs) error {
 	}
 
 	if args.DoManifest {
-		if err := updateManifest(cfg, args.Verbose); err != nil {
+		var manifestChanged, err = updateManifest(cfg, args.Verbose)
+		if err != nil {
 			return fmt.Errorf("manifest update failed: %w", err)
+		}
+		if args.ExitEarly && !manifestChanged {
+			return nil
 		}
 	}
 
@@ -98,11 +105,11 @@ func run(args AppArgs) error {
 	return nil
 }
 
-func updateManifest(cfg *config.Config, verbose bool) error {
+func updateManifest(cfg *config.Config, verbose bool) (bool, error) {
 	start := time.Now()
 	repos, err := GetAllRepositories(cfg, verbose)
 	if err != nil {
-		return fmt.Errorf("could not fetch repositories: %w", err)
+		return false, fmt.Errorf("could not fetch repositories: %w", err)
 	}
 
 	servers := make(map[string]string)
@@ -113,19 +120,32 @@ func updateManifest(cfg *config.Config, verbose bool) error {
 	for _, repo := range repos {
 		reposByPrefix[repo.RepoDir()] = &repo
 	}
-	serialized, err := json.MarshalIndent(&config.Manifest{
+
+	newManifest := &config.Manifest{
 		Servers:      servers,
 		Repositories: reposByPrefix,
 		UpdatedAt:    time.Now(),
-	}, "", "    ")
+	}
+
+	changed := true
+	oldManifest, err := config.ReadManifest(cfg.ManifestPath)
+	if err == nil {
+		serversEqual := reflect.DeepEqual(oldManifest.Servers, newManifest.Servers)
+		reposEqual := reflect.DeepEqual(oldManifest.Repositories, newManifest.Repositories)
+		changed = !(serversEqual && reposEqual)
+	}
+
+	serialized, err := json.MarshalIndent(newManifest, "", "    ")
 	if err != nil {
-		return fmt.Errorf("could not marshal manifest: %w", err)
+		return false, fmt.Errorf("could not marshal manifest: %w", err)
 	}
 	if err := atomicWriteFile(cfg.ManifestPath, serialized); err != nil {
-		return fmt.Errorf("could not write manifest file: %w", err)
+		return false, fmt.Errorf("could not write manifest file: %w", err)
 	}
-	log.Printf("Found %d repositories for %d servers in %s.\n", len(repos), len(cfg.Servers), time.Since(start).Round(10*time.Millisecond))
-	return nil
+	if changed {
+		log.Printf("Found %d repositories for %d servers in %s.\n", len(repos), len(cfg.Servers), time.Since(start).Round(10*time.Millisecond))
+	}
+	return changed, nil
 }
 
 func atomicWriteFile(filePath string, data []byte) error {
@@ -138,11 +158,11 @@ func atomicWriteFile(filePath string, data []byte) error {
 	defer func() {
 		// If the rename operation succeeds, this remove will fail, which is fine.
 		// If the rename fails, this will clean up the lingering temp file.
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 	}()
 
 	if _, err := tmpFile.Write(data); err != nil {
-		tmpFile.Close()
+		_ = tmpFile.Close()
 		return fmt.Errorf("failed to write data to temporary file: %w", err)
 	}
 

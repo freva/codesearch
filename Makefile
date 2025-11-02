@@ -1,4 +1,4 @@
-all: restart ui
+all: ui restart
 
 go:
 	go install ./...
@@ -7,7 +7,7 @@ test:
 	go test ./...
 
 ui:
-	cd frontend && yarn install && yarn build --outDir ../cmd/cserver/static
+	cd frontend && pnpm install && pnpm build --emptyOutDir --outDir ../cmd/cserver/static
 
 restart: go
 	systemctl --user restart codesearch-server.service

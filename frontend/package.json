@@ -12,20 +12,20 @@
   },
   "dependencies": {
     "@mantine/core": "^8.3.6",
-    "@mantine/hooks": "^8.3.6",
     "dayjs": "^1.11.19",
     "lodash": "^4.17.21",
+    "prismjs": "^1.29.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.66.0",
     "react-router-dom": "^7.9.5",
-    "shiki": "^3.14.0",
     "use-context-selector": "^2.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.9.2",
+    "@types/prismjs": "^1.26.5",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.46.2",

@@ -23,7 +23,7 @@ function FileContent({
   path: string;
   ranges: LineMatch[];
 }): ReactNode {
-  const { search, hash } = useLocation();
+  const { hash } = useLocation();
   useEffect(() => {
     if (hash.length === 0) return;
     const fragment = hash.substring(1);
@@ -35,7 +35,7 @@ function FileContent({
           for (const elem of document.getElementsByClassName('line highlight'))
             elem.classList.remove('highlight');
           element.classList.add('highlight');
-          element.scrollIntoView({ block: 'nearest' });
+          element.scrollIntoView({ block: 'center' });
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 100)); // thisisfine.jpg
@@ -49,7 +49,7 @@ function FileContent({
         {Array.from({ length: countLines(code) })
           .map((_, i) => i + 1)
           .map((i) => (
-            <Link to={`${search}#L${i}`} key={i}>
+            <Link to={{ hash: `#L${i}` }} key={i}>
               {i}.
             </Link>
           ))}

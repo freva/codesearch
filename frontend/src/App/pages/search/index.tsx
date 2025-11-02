@@ -50,9 +50,7 @@ function Hit({ file }: { file: File }): ReactNode {
   return (
     <div>
       <div>
-        <Link
-          to={`/file/${file.directory}/${file.path}${window.location.search}`}
-        >
+        <Link to={{ pathname: `/file/${file.directory}/${file.path}` }}>
           {file.directory}/{file.path}
         </Link>
       </div>

@@ -18,7 +18,7 @@ export function SearchContextProvider({
   const location = useLocation();
   const navigate = useNavigate();
   const form = useForm<Filters>({
-    values: parseUrlParams(location.search),
+    defaultValues: parseUrlParams(location.search),
     shouldUnregister: true,
   });
   const queryRef = useRef<string | undefined>(undefined);

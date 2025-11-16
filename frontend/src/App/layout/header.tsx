@@ -16,9 +16,9 @@ function Shortcut({
   shortcut,
 }: PropsWithChildren<{ shortcut: string }>): ReactNode {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+    <div className="flex items-center gap-2">
       {children}
-      <span style={{ fontSize: '1rem', color: '#888' }}>{shortcut}</span>
+      <span className="text-base text-gray-500">{shortcut}</span>
     </div>
   );
 }
@@ -27,6 +27,7 @@ function TextInput({
   name,
   control,
   width,
+  ta,
   ...props
 }: {
   name: keyof Omit<Filters, 'caseInsensitive'>;
@@ -38,13 +39,8 @@ function TextInput({
     <Controller
       render={({ field }) => (
         <input
-          style={{
-            width,
-            fontSize: '1.1rem',
-            padding: '0.2rem 0.5rem',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-          }}
+          className="text-[1.1rem] px-2 py-1 border border-gray-300 rounded"
+          style={{ width, textAlign: ta }}
           {...field}
           {...props}
         />
@@ -64,34 +60,22 @@ export function Header(): ReactNode {
         navigate(`/${createUrlParams(values)}`);
         unfocus();
       })}
-      style={{
-        margin: '1rem 0',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-      }}
+      className="my-4 flex flex-col items-center"
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          marginBottom: '0.5rem',
-        }}
-      >
-        <span style={{ fontSize: '1.2rem' }}>Lines matching</span>
+      <div className="flex items-center gap-4 mb-2">
+        <span>Lines matching</span>
         <Shortcut shortcut="q">
           <TextInput name="query" control={form.control} width={300} />
         </Shortcut>
-        <span style={{ fontSize: '1.2rem' }}>in files matching</span>
+        <span>in files matching</span>
         <Shortcut shortcut="f">
           <TextInput name="file" control={form.control} width={200} />
         </Shortcut>
-        <span style={{ fontSize: '1.2rem' }}>and not</span>
+        <span>and not</span>
         <Shortcut shortcut="x">
           <TextInput name="excludeFile" control={form.control} width={200} />
         </Shortcut>
-        <span style={{ fontSize: '1.2rem' }}>context</span>
+        <span>context</span>
         <Shortcut shortcut="b">
           <TextInput
             name="numLinesBefore"
@@ -108,7 +92,7 @@ export function Header(): ReactNode {
             ta="right"
           />
         </Shortcut>
-        <span style={{ fontSize: '1.2rem' }}>case insensitive</span>
+        <span>case insensitive</span>
         <Shortcut shortcut="i">
           <Controller
             name="caseInsensitive"
@@ -118,7 +102,7 @@ export function Header(): ReactNode {
                 type="checkbox"
                 checked={value}
                 {...rest}
-                style={{ cursor: 'pointer' }}
+                className="cursor-pointer"
               />
             )}
           />
@@ -126,26 +110,13 @@ export function Header(): ReactNode {
         <Shortcut shortcut="s">
           <button
             type="submit"
-            style={{
-              padding: '0.3rem 1rem',
-              border: 'none',
-              background: '#eee',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
+            className="px-4 py-1 bg-gray-100 rounded border-none cursor-pointer"
           >
             Search
           </button>
         </Shortcut>
       </div>
-      <div
-        style={{
-          width: '100%',
-          height: '1px',
-          backgroundColor: '#ddd',
-          margin: '0.5rem 0',
-        }}
-      />
+      <div className="w-full h-px bg-gray-200 my-2" />
     </form>
   );
 }

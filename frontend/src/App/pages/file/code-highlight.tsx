@@ -13,6 +13,7 @@ import 'prismjs/components/prism-go';
 import 'prismjs/components/prism-hcl';
 import 'prismjs/components/prism-java';
 import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-jsx';
 import 'prismjs/components/prism-makefile';

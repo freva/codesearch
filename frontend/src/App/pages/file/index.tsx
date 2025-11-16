@@ -88,8 +88,8 @@ export function File(): ReactNode {
 
   const parts = `${result!.directory}/${result!.path}`.split('/');
   return (
-    <div className="container">
-      <div className="breadcrumbs text-lg my-4">
+    <div className="p-15">
+      <div className="breadcrumbs my-4">
         {parts.map((name, i, arr) => (
           <span key={`${i}-${name}`} style={{ display: 'inline' }}>
             {i > 0 && (

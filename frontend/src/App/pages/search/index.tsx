@@ -98,7 +98,7 @@ export function Search(): ReactNode {
     );
 
   return (
-    <div className="container">
+    <div className="p-15">
       {result!.files.map((file) => (
         <Hit key={`${file.path}:${file.range}`} file={file} />
       ))}

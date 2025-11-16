@@ -1,5 +1,3 @@
-import './styles/index.css';
-
 import type { ReactNode } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { ErrorBoundary } from './error-boundary';

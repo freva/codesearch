@@ -1,6 +1,5 @@
 import { useSearchContext } from '../pages/store';
 import type { ReactNode } from 'react';
-import { Anchor, Divider, Group, Kbd, Stack, Text } from '@mantine/core';
 import { backendUrl } from '../libs/fetcher.ts';
 
 function formatDate(date: Date): string {
@@ -27,20 +26,49 @@ export function Footer(): ReactNode {
         ? `${result.matches.length} matches`
         : '';
   return (
-    <Stack mt="auto" gap={0}>
-      <Divider m={0} />
-      <Group justify="space-between" p="xs">
-        <Group>
-          <Kbd size="xs">?</Kbd> toggle help
-        </Group>
-        <Text>{text}</Text>
-        <Text>
-          <Anchor href={`${backendUrl()}/rest/manifest`} target="_blank">
+    <footer style={{ marginTop: 'auto', width: '100%' }}>
+      <div
+        style={{
+          width: '100%',
+          height: '1px',
+          backgroundColor: '#ddd',
+          margin: 0,
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '0.5rem 1rem',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <kbd
+            style={{
+              padding: '2px 6px',
+              border: '1px solid #ccc',
+              borderRadius: '3px',
+              background: '#f9f9f9',
+              fontFamily: 'monospace',
+            }}
+          >
+            ?
+          </kbd>
+          <span>toggle help</span>
+        </div>
+        <span>{text}</span>
+        <span>
+          <a
+            href={`${backendUrl()}/rest/manifest`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             repositories
-          </Anchor>
+          </a>
           {` indexed at ${formatDate(new Date(result.updatedAt))}`}
-        </Text>
-      </Group>
-    </Stack>
+        </span>
+      </div>
+    </footer>
   );
 }

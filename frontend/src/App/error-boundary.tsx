@@ -1,6 +1,5 @@
 import type { ErrorInfo, PropsWithChildren, ReactNode } from 'react';
 import { PureComponent } from 'react';
-import { Space, Stack, Text, Title } from '@mantine/core';
 
 export class ErrorBoundary extends PureComponent<PropsWithChildren> {
   state: Readonly<{ error: unknown }>;
@@ -25,11 +24,19 @@ export class ErrorBoundary extends PureComponent<PropsWithChildren> {
   render(): ReactNode {
     if (!this.state.error) return this.props.children;
     return (
-      <Stack align="center">
-        <Space h={55} />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          marginTop: '55px',
+        }}
+      >
         {/*<Icon name="bug" size="4x" />*/}
-        <Title>You encountered a bug</Title>
-        <Text>Error details:</Text>
+        <h1 style={{ fontSize: '2rem', margin: '1rem 0' }}>
+          You encountered a bug
+        </h1>
+        <div style={{ marginBottom: '0.5rem' }}>Error details:</div>
         <textarea
           rows={10}
           cols={80}
@@ -38,7 +45,7 @@ export class ErrorBoundary extends PureComponent<PropsWithChildren> {
           value={JSON.stringify(this.state.error, null, 2)}
           style={{ backgroundColor: '#fff', color: '#000' }}
         />
-      </Stack>
+      </div>
     );
   }
 }

@@ -1,120 +1,141 @@
 import type { ReactNode } from 'react';
 import { Fragment } from 'react';
-import type { SimpleGridProps } from '@mantine/core';
-import { Box, Kbd, Modal, Stack, Text } from '@mantine/core';
-import classNames from './keyboard-shortcuts.module.css';
-import { URL_GENERATORS, useKeyboardShortcuts } from './use-keyboard-shortcuts.ts';
+import { useKeyboardShortcuts } from './use-keyboard-shortcuts';
 
-type KeyDescription = {
-  keys: string[];
-  description: string;
-  joiner: string;
-};
-
-function Columns(props: SimpleGridProps): ReactNode {
-  return <Box className={classNames.columns} {...props} />;
-}
-
-function shortcut(
-  keys: string | string[],
-  description: string,
-  joiner: string = ' then ',
-): KeyDescription {
-  if (typeof keys === 'string') keys = [keys];
-  return { keys, description, joiner };
-}
+const columns: {
+  header?: string;
+  keys: { keys: string[]; description: string; joiner?: string }[];
+}[] = [
+  {
+    header: 'General',
+    keys: [
+      { keys: ['Esc'], description: 'Unfocus filter input' },
+      { keys: ['?'], description: 'Toggle help (this window)' },
+      { keys: ['q'], description: 'Focus line filter input' },
+      { keys: ['f'], description: 'Focus file filter input' },
+      { keys: ['x'], description: 'Focus exclude path input' },
+      { keys: ['b'], description: 'Focus context before input' },
+      { keys: ['a'], description: 'Focus context after input' },
+      { keys: ['i'], description: 'Toggle case sensitivity' },
+      { keys: ['s'], description: 'Search' },
+      { keys: ['r'], description: 'Reset search form' },
+    ],
+  },
+  {
+    header: 'Navigation',
+    keys: [
+      { keys: ['k', '▲'], description: 'Select hit above', joiner: ' or ' },
+      { keys: ['j', '▼'], description: 'Select hit below', joiner: ' or ' },
+    ],
+  },
+];
 
 function Column({
   header,
   keys,
 }: {
   header?: string;
-  keys: KeyDescription[];
+  keys: { keys: string[]; description: string; joiner?: string }[];
 }): ReactNode {
   return (
-    <>
-      <Stack>
-        {header && <Text fw={800}>{header}</Text>}
-        <Box
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'max-content auto',
-            gap: '5px',
-          }}
-        >
-          {keys.map(({ keys, description, joiner }, i1) => (
-            <Fragment key={i1}>
-              <Box>
-                {keys.map((key, i2) => (
-                  <Fragment key={i2}>
-                    {i2 > 0 && (
-                      <Text span c="dimmed">
-                        {joiner}
-                      </Text>
-                    )}
-                    <Kbd>{key}</Kbd>
-                  </Fragment>
-                ))}
-              </Box>
-              <Box>{description}</Box>
-            </Fragment>
-          ))}
-        </Box>
-      </Stack>
-    </>
+    <div style={{ marginBottom: '1rem' }}>
+      {header && <div style={{ fontWeight: 800 }}>{header}</div>}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'max-content auto',
+          gap: '5px',
+        }}
+      >
+        {keys.map(({ keys, description, joiner }, i1: number) => (
+          <Fragment key={i1}>
+            <div>
+              {keys.map((key, i2: number) => (
+                <Fragment key={i2}>
+                  {i2 > 0 && (
+                    <span style={{ color: '#888', margin: '0 2px' }}>
+                      {joiner}
+                    </span>
+                  )}
+                  <kbd
+                    style={{
+                      padding: '2px 6px',
+                      border: '1px solid #ccc',
+                      borderRadius: '3px',
+                      background: '#f9f9f9',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {key}
+                  </kbd>
+                </Fragment>
+              ))}
+            </div>
+            <div>{description}</div>
+          </Fragment>
+        ))}
+      </div>
+    </div>
   );
 }
 
 export function KeyboardShortcuts(): ReactNode {
   const [open, setOpen] = useKeyboardShortcuts();
+  if (!open) return null;
 
+  const onClose = (): void => setOpen(false);
   return (
-    <Modal
-      opened={open}
-      closeOnClickOutside
-      closeOnEscape
-      onClose={() => setOpen(false)}
-      title="Keyboard shortcuts"
-      size="80%"
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      onClick={onClose}
     >
-      <Stack gap="lg">
-        <Columns>
-          <Column
-            header="General"
-            keys={[
-              shortcut('Esc', 'Unfocus filter input'),
-              shortcut('?', 'Toggle help (this window)'),
-              shortcut('q', 'Focus query input'),
-              shortcut('f', 'Focus file input'),
-              shortcut('x', 'Focus exclude file input'),
-              shortcut('b', 'Focus context before input'),
-              shortcut('a', 'Focus context after input'),
-              shortcut('i', 'Toggle case insensitivity'),
-              shortcut('s', 'Search'),
-              shortcut('r', 'Reset'),
-            ]}
-          />
-          <Stack>
-            <Column
-              header="Navigation"
-              keys={[
-                shortcut(['k', '▲'], 'Select hit above', ' or '),
-                shortcut(['j', '▼'], 'Select hit below', ' or '),
-              ]}
-            />
-            <Column
-              header="Open..."
-              keys={URL_GENERATORS.map(({ key, name }) =>
-                shortcut(
-                  [key, key.toUpperCase()],
-                  `${name} in this / new window`,
-                  ' / ',
-                ),
-              )}
-            />
-          </Stack>
-        </Columns>
-      </Stack>
-    </Modal>
+      <div
+        style={{
+          background: '#fff',
+          padding: '2rem',
+          borderRadius: '8px',
+          minWidth: '300px',
+          maxWidth: '90vw',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '1rem' }}
+        >
+          Keyboard Shortcuts
+        </div>
+        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+          {columns.map((col, i: number) => (
+            <Column key={i} {...col} />
+          ))}
+        </div>
+        <button
+          style={{
+            marginTop: '2rem',
+            padding: '0.5rem 1rem',
+            border: 'none',
+            background: '#eee',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+    </div>
   );
 }

@@ -11,7 +11,6 @@
     "tsc": "tsc"
   },
   "dependencies": {
-    "@mantine/core": "^8.3.6",
     "lodash": "^4.17.21",
     "prismjs": "^1.29.0",
     "react": "^19.2.0",
@@ -36,9 +35,6 @@
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.5.0",
     "happy-dom": "^20.0.10",
-    "postcss": "^8.5.6",
-    "postcss-preset-mantine": "^1.18.0",
-    "postcss-simple-vars": "^7.0.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",

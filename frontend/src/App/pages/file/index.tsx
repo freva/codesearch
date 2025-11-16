@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { CodeHighlight } from './code-highlight';
-import { Alert, Breadcrumbs, Flex, Loader, Text } from '@mantine/core';
 import type { LineMatch } from '../store';
 import { useSearchContext } from '../store';
 
@@ -44,8 +43,23 @@ function FileContent({
   }, [hash]);
 
   return (
-    <Flex direction="row" gap="sm" ff="monospace" bd="1px solid #000">
-      <Flex direction="column" ta="right" pl="lg">
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '0.5rem',
+        fontFamily: 'monospace',
+        border: '1px solid #000',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          textAlign: 'right',
+          paddingLeft: '1rem',
+        }}
+      >
         {Array.from({ length: countLines(code) })
           .map((_, i) => i + 1)
           .map((i) => (
@@ -53,9 +67,9 @@ function FileContent({
               {i}.
             </Link>
           ))}
-      </Flex>
+      </div>
       <CodeHighlight {...{ code, ranges, path }} />
-    </Flex>
+    </div>
   );
 }
 
@@ -64,30 +78,31 @@ export function File(): ReactNode {
   if (resultState == null) return null;
 
   const { loading, error, result } = resultState;
-  if (loading) return <Loader color="blue" />;
+  if (loading) return <div className="loader">Loading...</div>;
   if (error)
     return (
-      <Alert variant="filled" color="red" title={error.message} m="xl"></Alert>
+      <div className="alert alert-error">
+        <strong>{error.message}</strong>
+      </div>
     );
 
+  const parts = `${result!.directory}/${result!.path}`.split('/');
   return (
     <div className="container">
-      <Breadcrumbs fz="lg" my="sm">
-        {`${result!.directory}/${result!.path}`
-          .split('/')
-          .map((name, i, arr) =>
-            i == arr.length - 1 ? (
-              <Text key={`${i}-${name}`}>{name}</Text>
+      <div className="breadcrumbs text-lg my-4">
+        {parts.map((name, i, arr) => (
+          <span key={`${i}-${name}`} style={{ display: 'inline' }}>
+            {i > 0 && (
+              <span style={{ margin: '0 0.5em', color: '#888' }}>/</span>
+            )}
+            {i === arr.length - 1 ? (
+              <span>{name}</span>
             ) : (
-              <Link
-                key={`${i}-${name}`}
-                to={'/file/' + arr.slice(0, i).join('/')}
-              >
-                {name}
-              </Link>
-            ),
-          )}
-      </Breadcrumbs>
+              <Link to={'/file/' + arr.slice(0, i + 1).join('/')}>{name}</Link>
+            )}
+          </span>
+        ))}
+      </div>
       <FileContent
         code={result!.content}
         path={result!.path}

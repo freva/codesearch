@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Alert, Loader } from '@mantine/core';
 import { CodeHighlight } from '../file/code-highlight';
 import type { File, Line } from '../store';
 import { useSearchContext } from '../store';
@@ -79,9 +78,24 @@ export function Search(): ReactNode {
   if (resultState == null) return null;
 
   const { loading, error, result } = resultState;
-  if (loading) return <Loader color="blue" />;
+  if (loading)
+    return (
+      <div style={{ textAlign: 'center', margin: '2rem' }}>Loading...</div>
+    );
   if (error)
-    return <Alert variant="filled" color="red" title={error.message} m="xl" />;
+    return (
+      <div
+        style={{
+          background: '#fee',
+          color: '#900',
+          padding: '1rem',
+          borderRadius: '4px',
+          margin: '2rem',
+        }}
+      >
+        <strong>Error:</strong> {error.message}
+      </div>
+    );
 
   return (
     <div className="container">

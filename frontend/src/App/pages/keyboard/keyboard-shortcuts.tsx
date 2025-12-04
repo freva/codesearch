@@ -38,40 +38,24 @@ function Column({
   keys: { keys: string[]; description: string; joiner?: string }[];
 }): ReactNode {
   return (
-    <div style={{ marginBottom: '1rem' }}>
-      {header && <div style={{ fontWeight: 800 }}>{header}</div>}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'max-content auto',
-          gap: '5px',
-        }}
-      >
+    <div className="mb-4">
+      {header && <div className="font-extrabold">{header}</div>}
+      <div className="grid grid-cols-[max-content_auto] gap-1.5">
         {keys.map(({ keys, description, joiner }, i1: number) => (
           <Fragment key={i1}>
             <div>
               {keys.map((key, i2: number) => (
                 <Fragment key={i2}>
                   {i2 > 0 && (
-                    <span style={{ color: '#888', margin: '0 2px' }}>
-                      {joiner}
-                    </span>
+                    <span className="text-gray-400 mx-0.5">{joiner}</span>
                   )}
-                  <kbd
-                    style={{
-                      padding: '2px 6px',
-                      border: '1px solid #ccc',
-                      borderRadius: '3px',
-                      background: '#f9f9f9',
-                      fontFamily: 'monospace',
-                    }}
-                  >
+                  <kbd className="px-1.5 py-0.5 border border-gray-300 rounded bg-gray-50 font-mono text-sm">
                     {key}
                   </kbd>
                 </Fragment>
               ))}
             </div>
-            <div>{description}</div>
+            <div className="text-gray-700">{description}</div>
           </Fragment>
         ))}
       </div>
@@ -86,51 +70,21 @@ export function KeyboardShortcuts(): ReactNode {
   const onClose = (): void => setOpen(false);
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        background: 'rgba(0,0,0,0.4)',
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      className="fixed inset-0 w-screen h-screen bg-black/40 z-[1000] flex items-center justify-center"
       onClick={onClose}
     >
       <div
-        style={{
-          background: '#fff',
-          padding: '2rem',
-          borderRadius: '8px',
-          minWidth: '300px',
-          maxWidth: '90vw',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
+        className="bg-white p-8 rounded-lg min-w-[300px] max-w-[90vw] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '1rem' }}
-        >
-          Keyboard Shortcuts
-        </div>
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <div className="font-bold text-lg mb-4">Keyboard Shortcuts</div>
+        <div className="flex gap-8 flex-wrap">
           {columns.map((col, i: number) => (
             <Column key={i} {...col} />
           ))}
         </div>
         <button
-          style={{
-            marginTop: '2rem',
-            padding: '0.5rem 1rem',
-            border: 'none',
-            background: '#eee',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
+          className="mt-8 px-4 py-2 border-none bg-gray-200 rounded cursor-pointer"
           onClick={onClose}
         >
           Close

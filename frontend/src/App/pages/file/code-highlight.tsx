@@ -138,7 +138,7 @@ function highlightCodeReact(
           const highlights = getHighlightsForLine(idx, ranges);
           const tokens = Prism.tokenize(line, prismLang);
           return (
-            <div key={idx} id={`L${idx + 1}`} className="line">
+            <div key={idx} id={`L${idx + 1}`} className="line hover:bg-blue-50">
               {renderPrismTokens(tokens, highlights)}
             </div>
           );

@@ -26,43 +26,22 @@ export function Footer(): ReactNode {
         ? `${result.matches.length} matches`
         : '';
   return (
-    <footer style={{ marginTop: 'auto', width: '100%' }}>
-      <div
-        style={{
-          width: '100%',
-          height: '1px',
-          backgroundColor: '#ddd',
-          margin: 0,
-        }}
-      />
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '0.5rem 1rem',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <kbd
-            style={{
-              padding: '2px 6px',
-              border: '1px solid #ccc',
-              borderRadius: '3px',
-              background: '#f9f9f9',
-              fontFamily: 'monospace',
-            }}
-          >
+    <footer className="mt-auto">
+      <div className="h-px bg-gray-300" />
+      <div className="flex justify-between items-center px-4 py-2">
+        <div className="flex items-center gap-2">
+          <kbd className="px-1.5 py-0.5 border border-gray-300 rounded bg-gray-50 font-mono text-sm">
             ?
           </kbd>
-          <span>toggle help</span>
+          <span className="text-gray-600">toggle help</span>
         </div>
-        <span>{text}</span>
-        <span>
+        <span className="text-gray-700">{text}</span>
+        <span className="text-gray-700">
           <a
             href={`${backendUrl()}/rest/manifest`}
             target="_blank"
             rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
           >
             repositories
           </a>

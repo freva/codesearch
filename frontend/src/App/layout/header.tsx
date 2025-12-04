@@ -1,26 +1,15 @@
-import type { CSSProperties, PropsWithChildren, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { Filters } from '../pages/store';
 import { useSearchContext } from '../pages/store';
 import { Controller } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { createUrlParams } from '../pages/store/url-params.ts';
+import { createUrlParams } from '../pages/store/url-params';
+import { LuArrowDown, LuArrowUp } from 'react-icons/lu';
 
 export function unfocus(): void {
   const elem = document.activeElement;
   if (elem instanceof HTMLElement) elem.blur();
-}
-
-function Shortcut({
-  children,
-  shortcut,
-}: PropsWithChildren<{ shortcut: string }>): ReactNode {
-  return (
-    <div className="flex items-center gap-2">
-      {children}
-      <span className="text-base text-gray-500">{shortcut}</span>
-    </div>
-  );
 }
 
 function TextInput({
@@ -34,12 +23,13 @@ function TextInput({
   control: Control<Filters>;
   ta?: CSSProperties['textAlign'];
   width: number;
+  placeholder?: string;
 }): ReactNode {
   return (
     <Controller
       render={({ field }) => (
         <input
-          className="text-[1.1rem] px-2 py-1 border border-gray-300 rounded"
+          className="h-8 text-base px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
           style={{ width, textAlign: ta }}
           {...field}
           {...props}
@@ -50,73 +40,101 @@ function TextInput({
   );
 }
 
+function ToggleButton({
+  control,
+  name,
+  children,
+}: {
+  control: Control<Filters>;
+  name: 'caseInsensitive';
+  children: ReactNode;
+}): ReactNode {
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field: { value, onChange } }) => (
+        <button
+          type="button"
+          onClick={() => onChange(!value)}
+          className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors duration-150
+            ${value ? 'bg-blue-200 text-blue-700' : 'bg-gray-100 text-gray-400 hover:bg-blue-100'}`}
+        >
+          {children}
+        </button>
+      )}
+    />
+  );
+}
+
 export function Header(): ReactNode {
   const form = useSearchContext((ctx) => ctx.form);
   const navigate = useNavigate();
 
   return (
-    <form
-      onSubmit={form.handleSubmit((values) => {
-        navigate(`/${createUrlParams(values)}`);
-        unfocus();
-      })}
-      className="my-4 flex flex-col items-center"
-    >
-      <div className="flex items-center gap-4 mb-2">
-        <span>Lines matching</span>
-        <Shortcut shortcut="q">
-          <TextInput name="query" control={form.control} width={300} />
-        </Shortcut>
-        <span>in files matching</span>
-        <Shortcut shortcut="f">
-          <TextInput name="file" control={form.control} width={200} />
-        </Shortcut>
-        <span>and not</span>
-        <Shortcut shortcut="x">
-          <TextInput name="excludeFile" control={form.control} width={200} />
-        </Shortcut>
-        <span>context</span>
-        <Shortcut shortcut="b">
+    <div className="p-1.5 border-b border-gray-200 bg-white">
+      <form
+        onSubmit={form.handleSubmit((values) => {
+          navigate(`/${createUrlParams(values)}`);
+          unfocus();
+        })}
+        className="flex items-center justify-center gap-2"
+      >
+        <TextInput
+          name="query"
+          control={form.control}
+          width={300}
+          placeholder="Line filter"
+        />
+        <TextInput
+          name="file"
+          control={form.control}
+          width={250}
+          placeholder="File path filter"
+        />
+        <TextInput
+          name="excludeFile"
+          control={form.control}
+          width={250}
+          placeholder="Exclude path filter"
+        />
+
+        <div className="flex items-center gap-1" title="Lines before">
+          <LuArrowUp className="text-gray-400" />
           <TextInput
             name="numLinesBefore"
             control={form.control}
             width={40}
             ta="right"
           />
-        </Shortcut>
-        <Shortcut shortcut="a">
+        </div>
+
+        <div className="flex items-center gap-1" title="Lines after">
+          <LuArrowDown className="text-gray-400" />
           <TextInput
             name="numLinesAfter"
             control={form.control}
             width={40}
             ta="right"
           />
-        </Shortcut>
-        <span>case insensitive</span>
-        <Shortcut shortcut="i">
-          <Controller
-            name="caseInsensitive"
-            control={form.control}
-            render={({ field: { value, ...rest } }) => (
-              <input
-                type="checkbox"
-                checked={value}
-                {...rest}
-                className="cursor-pointer"
-              />
-            )}
-          />
-        </Shortcut>
-        <Shortcut shortcut="s">
-          <button
-            type="submit"
-            className="px-4 py-1 bg-gray-100 rounded border-none cursor-pointer"
+        </div>
+
+        <ToggleButton name="caseInsensitive" control={form.control}>
+          <span
+            className="text-xs font-semibold select-none text-gray-600 px-1"
+            title="Case-sensitive"
           >
-            Search
-          </button>
-        </Shortcut>
-      </div>
-      <div className="w-full h-px bg-gray-200 my-2" />
-    </form>
+            Aa
+          </span>
+        </ToggleButton>
+
+        <button
+          type="submit"
+          className="h-8 gap-1.5 rounded-md text-sm bg-blue-500 text-white border border-blue-700 px-4 shadow hover:bg-blue-600 transition-colors duration-150"
+        >
+          Search
+        </button>
+      </form>
+    </div>
   );
 }

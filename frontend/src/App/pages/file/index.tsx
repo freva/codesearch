@@ -43,32 +43,23 @@ function FileContent({
   }, [hash]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: '0.5rem',
-        fontFamily: 'monospace',
-        border: '1px solid #000',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          textAlign: 'right',
-          paddingLeft: '1rem',
-        }}
-      >
+    <div className="rounded-lg overflow-hidden border border-gray-300 flex flex-row font-mono">
+      <div className="flex flex-col bg-gray-50 border-r border-gray-200 select-none">
         {Array.from({ length: countLines(code) })
           .map((_, i) => i + 1)
           .map((i) => (
-            <Link to={{ hash: `#L${i}` }} key={i}>
-              {i}.
+            <Link
+              to={{ hash: `#L${i}` }}
+              key={i}
+              className="w-12 text-gray-500 hover:text-blue-600 px-2 flex items-center justify-end"
+            >
+              {i}
             </Link>
           ))}
       </div>
-      <CodeHighlight {...{ code, ranges, path }} />
+      <div className="flex-1 overflow-x-auto">
+        <CodeHighlight {...{ code, ranges, path }} />
+      </div>
     </div>
   );
 }
@@ -78,27 +69,30 @@ export function File(): ReactNode {
   if (resultState == null) return null;
 
   const { loading, error, result } = resultState;
-  if (loading) return <div className="loader">Loading...</div>;
+  if (loading) return <div className="text-center my-8">Loading...</div>;
   if (error)
     return (
-      <div className="alert alert-error">
-        <strong>{error.message}</strong>
+      <div className="bg-red-100 text-red-700 p-4 rounded m-4">
+        <strong>Error:</strong> {error.message}
       </div>
     );
 
   const parts = `${result!.directory}/${result!.path}`.split('/');
   return (
-    <div className="p-15">
-      <div className="breadcrumbs my-4">
+    <div className="px-2 py-1 w-full max-w-none mx-auto">
+      <div className="flex items-center text-sm text-gray-600 my-1 flex-wrap gap-1">
         {parts.map((name, i, arr) => (
-          <span key={`${i}-${name}`} style={{ display: 'inline' }}>
-            {i > 0 && (
-              <span style={{ margin: '0 0.5em', color: '#888' }}>/</span>
-            )}
+          <span key={`${i}-${name}`} className="inline">
+            {i > 0 ? <span className="mx-1 text-gray-400">/</span> : null}
             {i === arr.length - 1 ? (
-              <span>{name}</span>
+              <span className="font-medium text-gray-900">{name}</span>
             ) : (
-              <Link to={'/file/' + arr.slice(0, i + 1).join('/')}>{name}</Link>
+              <Link
+                to={'/file/' + arr.slice(0, i + 1).join('/')}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                {name}
+              </Link>
             )}
           </span>
         ))}

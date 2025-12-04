@@ -1,64 +1,14 @@
-
-
-table.hit {
-    width: 100%;
-    border-spacing: 0;
-    border-collapse: collapse;
-}
-table.hit tr.selected {
-    border: 1px dashed #000;
-}
-table.hit td.block {
-    padding: 0;
-}
-
-table.hit td.block {
-    border-left: 1px solid #888;
-    border-right: 1px solid #888;
-}
-table.hit td.block-start {
-    margin-top: 2px;
-    border-top: 1px solid #888;
-}
-table.hit td.block-end {
-    margin-bottom: 2px;
-    border-bottom: 1px solid #888;
-}
-
-table.hit td:first-child {
-    width: 5ex;
-    text-align: right;
-    font-family: monospace;
-    font-size: 90%;
-}
-
-table.hit td:first-child a {
-    color: black;
-}
-
-table.hit pre {
-    padding: 2px;
-    margin: 0;
-    line-height: normal;
-    cursor: pointer;
-}
 @import "tailwindcss";
 
 /* Highlight styles */
 code[class*="language-"], pre[class*="language-"] {
-    color: black;
     background: none;
     text-shadow: 0 1px white;
     font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-    font-size: 1em;
-    text-align: left;
     white-space: pre;
-    word-spacing: normal;
-    word-break: normal;
-    word-wrap: normal;
-    line-height: 1.5;
     tab-size: 4;
     hyphens: none;
+    margin-top: -2px;
 }
 
 pre[class*="language-"]::selection, pre[class*="language-"] ::selection {
@@ -66,8 +16,9 @@ pre[class*="language-"]::selection, pre[class*="language-"] ::selection {
     background: #b3d4fc;
 }
 
-code[class*="language-"], .line {
-    height: 1.5em;
+.line {
+    height: calc(var(--spacing) * 6);
+    padding-inline: calc(var(--spacing) * 2);
 }
 
 .line.highlight {
@@ -79,8 +30,6 @@ code[class*="language-"], .line {
 }
 
 /* Code blocks */
-
-
 .token.comment,
 .token.prolog,
 .token.doctype,

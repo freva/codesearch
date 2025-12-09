@@ -14,8 +14,8 @@ const columns: {
       { keys: ['q'], description: 'Focus line filter input' },
       { keys: ['f'], description: 'Focus file filter input' },
       { keys: ['x'], description: 'Focus exclude path input' },
-      { keys: ['b'], description: 'Focus context before input' },
-      { keys: ['a'], description: 'Focus context after input' },
+      { keys: ['['], description: 'Focus context before input' },
+      { keys: [']'], description: 'Focus context after input' },
       { keys: ['i'], description: 'Toggle case sensitivity' },
       { keys: ['s'], description: 'Search' },
       { keys: ['r'], description: 'Reset search form' },
@@ -26,6 +26,15 @@ const columns: {
     keys: [
       { keys: ['k', '▲'], description: 'Select hit above', joiner: ' or ' },
       { keys: ['j', '▼'], description: 'Select hit below', joiner: ' or ' },
+    ],
+  },
+  {
+    header: 'Open selected file',
+    keys: [
+      { keys: ['o', 'O'], description: 'In file view (tab / window)' },
+      { keys: ['f', 'F'], description: 'In file in GitHub (tab / window)' },
+      { keys: ['b', 'B'], description: 'In blame in GitHub (tab / window)' },
+      { keys: ['h', 'H'], description: 'In history in GitHub (tab / window)' },
     ],
   },
 ];
@@ -41,7 +50,7 @@ function Column({
     <div className="mb-4">
       {header && <div className="font-extrabold">{header}</div>}
       <div className="grid grid-cols-[max-content_auto] gap-1.5">
-        {keys.map(({ keys, description, joiner }, i1: number) => (
+        {keys.map(({ keys, description, joiner = ' / ' }, i1: number) => (
           <Fragment key={i1}>
             <div>
               {keys.map((key, i2: number) => (

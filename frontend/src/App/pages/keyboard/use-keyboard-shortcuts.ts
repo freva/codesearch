@@ -82,8 +82,8 @@ export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {
       ['f', (): void => form.setFocus('file')],
       ['x', (): void => form.setFocus('excludeFile')],
       ['i', modify(form, 'caseInsensitive', (cur) => !cur)],
-      // ['b', (): void => form.setFocus('numLinesBefore')],
-      ['a', (): void => form.setFocus('numLinesAfter')],
+      ['[', (): void => form.setFocus('numLinesBefore')],
+      [']', (): void => form.setFocus('numLinesAfter')],
       ['s', (): void => { navigate(`/${createUrlParams(form.getValues())}`) }],
       ['?', (): void => setOpen((open) => !open)],
 

@@ -1,6 +1,6 @@
 import { useSearchContext } from '../pages/store';
 import type { ReactNode } from 'react';
-import { backendUrl } from '../libs/fetcher.ts';
+import { backendUrl } from '../libs/fetcher';
 
 function formatDate(date: Date): string {
   const year = date.getFullYear();
@@ -13,9 +13,7 @@ function formatDate(date: Date): string {
 }
 
 export function Footer(): ReactNode {
-  const result = useSearchContext(
-    (ctx) => ctx.fileResult?.result ?? ctx.searchResult?.result,
-  );
+  const result = useSearchContext((ctx) => ctx.fileResult?.result ?? ctx.searchResult?.result);
 
   if (!result) return null;
 
@@ -28,11 +26,9 @@ export function Footer(): ReactNode {
   return (
     <footer className="mt-auto">
       <div className="h-px bg-gray-300" />
-      <div className="flex justify-between items-center px-4 py-2">
+      <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
-          <kbd className="px-1.5 py-0.5 border border-gray-300 rounded bg-gray-50 font-mono text-sm">
-            ?
-          </kbd>
+          <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-sm">?</kbd>
           <span className="text-gray-600">toggle help</span>
         </div>
         <span className="text-gray-700">{text}</span>

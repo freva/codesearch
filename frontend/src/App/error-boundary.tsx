@@ -16,7 +16,6 @@ export class ErrorBoundary extends PureComponent<PropsWithChildren> {
         exception: exception.stack ?? exception.message,
         ...errorInfo,
       },
-      ...exception,
     };
     this.setState({ error: meta });
   }
@@ -24,16 +23,18 @@ export class ErrorBoundary extends PureComponent<PropsWithChildren> {
   render(): ReactNode {
     if (!this.state.error) return this.props.children;
     return (
-      <div className="flex flex-col items-center mt-[55px]">
-        <h1 className="text-2xl my-4 font-bold">You encountered a bug</h1>
+      <div className="mt-[55px] flex flex-col items-center">
+        <h1 className="my-4 text-2xl font-bold">You encountered a bug</h1>
         <div className="mb-2 text-gray-700">Error details:</div>
         <textarea
           rows={10}
           cols={80}
-          onClick={(e) => e.currentTarget.select()}
+          onClick={(e) => {
+            e.currentTarget.select();
+          }}
           readOnly
           value={JSON.stringify(this.state.error, null, 2)}
-          className="bg-white text-black border border-gray-300 rounded p-2 font-mono resize-none"
+          className="resize-none rounded border border-gray-300 bg-white p-2 font-mono text-black"
         />
       </div>
     );

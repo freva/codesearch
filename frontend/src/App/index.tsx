@@ -6,7 +6,7 @@ import { File } from './pages/file';
 import { Header } from './layout/header';
 import { SearchContextProvider } from './pages/store';
 import { KeyboardShortcuts } from './pages/keyboard/keyboard-shortcuts';
-import { Footer } from './layout/footer.tsx';
+import { Footer } from './layout/footer';
 
 export default function App(): ReactNode {
   return (

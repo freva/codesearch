@@ -1,9 +1,9 @@
 import type { ActionData, File, SelectedHit, State } from '.';
 import { ACTION } from '.';
 
-function* hitIterator(files: File[]): Generator<SelectedHit> {
-  for (let file of files) {
-    for (let line of file.lines ?? []) {
+function* hitIterator(files: File[]): Generator<SelectedHit, undefined, unknown> {
+  for (const file of files) {
+    for (const line of file.lines ?? []) {
       if (line.range != null)
         yield {
           path: file.path,
@@ -24,19 +24,14 @@ function selectNode(state: State, down: boolean): State {
   }
 
   const selected = state.selectedHit;
-  if (selected == null)
-    return { ...state, selectedHit: hitIterator(files).next().value };
+  if (selected == null) return { ...state, selectedHit: hitIterator(files).next().value };
 
   let select = undefined;
   let prevHit = undefined;
   let stopAtNext = false;
-  for (let hit of hitIterator(files)) {
-    if (select == null) select = prevHit = hit;
-    if (
-      hit.path === selected.path &&
-      hit.directory == selected.directory &&
-      hit.line === selected.line
-    ) {
+  for (const hit of hitIterator(files)) {
+    select ??= prevHit = hit;
+    if (hit.path === selected.path && hit.directory == selected.directory && hit.line === selected.line) {
       if (!down) {
         select = prevHit;
         break;
@@ -87,6 +82,6 @@ function _preReducer(state: State, [action, data]: ActionData): State {
       return state;
 
     default:
-      throw new Error(`Unknown action ${action}`);
+      throw new Error(`Unknown action ${JSON.stringify(action)}`);
   }
 }

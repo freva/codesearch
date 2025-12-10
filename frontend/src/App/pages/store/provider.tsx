@@ -1,20 +1,21 @@
-import type { Context, Dispatch, PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import { useLayoutEffect, useReducer, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { createContext, useContextSelector } from 'use-context-selector';
-import { ACTION } from '.';
-import type { ActionData, State, SearchResult, Filters, FileResult } from '.';
+import { ACTION, dispatch } from '.';
+import type { SearchResult, Filters, FileResult } from '.';
 import { reducer } from './reducer';
 import { parseUrlParams } from './url-params';
 import { Get } from '../../libs/fetcher';
 import { useForm } from 'react-hook-form';
+import { internal } from './context';
 
-let searchContextDispatchRef: Dispatch<ActionData> | undefined;
-const context = createContext<State | undefined>(undefined);
+function normalizeError(error: unknown): { message: string } {
+  if (error instanceof Error) return { message: error.message };
+  if (typeof error === 'string') return { message: error };
+  return { message: 'Unknown error' };
+}
 
-export function SearchContextProvider({
-  children,
-}: PropsWithChildren): ReactNode {
+export function SearchContextProvider({ children }: PropsWithChildren): ReactNode {
   const location = useLocation();
   const navigate = useNavigate();
   const form = useForm<Filters>({
@@ -26,8 +27,8 @@ export function SearchContextProvider({
   const [value, searchContextDispatch] = useReducer(reducer, { form });
 
   useLayoutEffect(() => {
-    searchContextDispatchRef = searchContextDispatch;
-    return (): void => (searchContextDispatchRef = undefined);
+    internal.searchContextDispatchRef = searchContextDispatch;
+    return (): void => (internal.searchContextDispatchRef = undefined);
   }, []);
 
   // Every time the URL changes, update the state
@@ -38,39 +39,36 @@ export function SearchContextProvider({
       queryRef.current = queryParams;
 
       dispatch([ACTION.SET_FILE_RESULT, undefined]);
-      if (queryParams === '')
-        return dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
+      if (queryParams === '') {
+        dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
+        return;
+      }
 
       dispatch([ACTION.SET_SEARCH_RESULT, { loading: true }]);
-      Get<SearchResult>(`/rest/search${queryParams}`)
+      void Get<SearchResult>(`/rest/search${queryParams}`)
         .then((result) => ({ loading: false, result }))
-        .catch((error) => ({ loading: false, error }))
-        .then((data) => dispatch([ACTION.SET_SEARCH_RESULT, data]));
+        .catch((error: unknown) => ({ loading: false, error: normalizeError(error) }))
+        .then((data) => {
+          dispatch([ACTION.SET_SEARCH_RESULT, data]);
+        });
     } else if (location.pathname.startsWith('/file/')) {
       const params = new URLSearchParams(location.search);
       params.set('p', location.pathname.substring(6));
 
       dispatch([ACTION.SET_FILE_RESULT, { loading: true }]);
-      Get<FileResult>(`/rest/file?${params.toString()}`)
+      void Get<FileResult>(`/rest/file?${params.toString()}`)
         .then((result) => ({ loading: false, result }))
-        .catch((error) => ({ loading: false, error }))
-        .then((data) => dispatch([ACTION.SET_FILE_RESULT, data]));
+        .catch((error: unknown) => ({ loading: false, error: normalizeError(error) }))
+        .then((data) => {
+          dispatch([ACTION.SET_FILE_RESULT, data]);
+        });
     } else {
-      navigate('/', { replace: true });
+      void navigate('/', { replace: true });
       dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
       dispatch([ACTION.SET_FILE_RESULT, undefined]);
     }
-  }, [location.pathname, location.search]);
+  }, [navigate, location.pathname, location.search]);
 
-  return <context.Provider value={value}>{children}</context.Provider>;
-}
-
-export function useSearchContext<T>(selector: (s: State) => T): T {
-  return useContextSelector(context as Context<State>, selector);
-}
-
-export function dispatch(actionData: ActionData): void {
-  if (!searchContextDispatchRef)
-    throw new Error('Search context dispatch not set');
-  searchContextDispatchRef(actionData);
+  // eslint-disable-next-line react-x/no-context-provider
+  return <internal.context.Provider value={value}>{children}</internal.context.Provider>;
 }

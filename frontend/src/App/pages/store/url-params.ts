@@ -36,10 +36,8 @@ export function createUrlParams({
   if (file) params.set(qpFile, file);
   if (excludeFile) params.set(qpExcludeFile, excludeFile);
   if (caseInsensitive) params.set(qpCaseInsensitive, 'true');
-  if (numLinesBefore !== 0)
-    params.set(qpNumBeforeLines, numLinesBefore.toString(10));
-  if (numLinesAfter !== 0)
-    params.set(qpNumAfterLines, numLinesAfter.toString(10));
+  if (numLinesBefore !== 0) params.set(qpNumBeforeLines, numLinesBefore.toString(10));
+  if (numLinesAfter !== 0) params.set(qpNumAfterLines, numLinesAfter.toString(10));
   const paramsStr = params.toString();
   return paramsStr.length > 0 ? '?' + paramsStr : '';
 }

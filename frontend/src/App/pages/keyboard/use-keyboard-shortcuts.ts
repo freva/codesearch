@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
-import { listener } from './sequence-key-listener.ts';
+import { listener } from './sequence-key-listener';
 import type { Filters, SelectedHit } from '../store';
 import { ACTION, dispatch, useSearchContext } from '../store';
 import type { FieldPath, FieldPathValue, UseFormReturn } from 'react-hook-form';
-import { createUrlParams } from '../store/url-params.ts';
-import { unfocus } from '../../layout/header.tsx';
+import { createUrlParams } from '../store/url-params';
 
 const testFileRegex = '/tests?/|_tests?\\b|Tests?[^a-z]|/systemtests/|\\.html$';
 
-const pathAnchor = (hit: SelectedHit): string =>
-  `${hit.path}${hit.line > 0 ? '#L' + hit.line : ''}`;
+const pathAnchor = (hit: SelectedHit): string => `${hit.path}${hit.line > 0 ? `#L${hit.line}` : ''}`;
+
+export function unfocus(): void {
+  const elem = document.activeElement;
+  if (elem instanceof HTMLElement) elem.blur();
+}
 
 function ghUrl(view: string): (hit: SelectedHit) => string {
   return (hit) => `${hit.repository}/${view}/${hit.branch}/${pathAnchor(hit)}`;
@@ -33,36 +36,27 @@ export const URL_GENERATORS: readonly {
   { key: 'h', name: 'history view', url: ghUrl('commits') },
 ]);
 
-const goToDispatcher =
-  (
-    navigate: NavigateFunction,
-    urlGenerator: UrlGenerator,
-    newWindow: boolean,
-  ) =>
-  (): void =>
-    dispatch([
-      ACTION.CALLBACK_SELECTED_HIT,
-      (selectedHit: SelectedHit): void => {
-        const url = urlGenerator(selectedHit);
-        if (url == null) return;
-        if (newWindow) window.open(url);
-        else if (url.startsWith('http')) window.location.href = url;
-        else navigate(url);
-      },
-    ]);
+const goToDispatcher = (navigate: NavigateFunction, urlGenerator: UrlGenerator, newWindow: boolean) => (): void => {
+  dispatch([
+    ACTION.CALLBACK_SELECTED_HIT,
+    (selectedHit: SelectedHit): void => {
+      const url = urlGenerator(selectedHit);
+      if (url == null) return;
+      if (newWindow) window.open(url);
+      else if (url.startsWith('http')) window.location.href = url;
+      else void navigate(url);
+    },
+  ]);
+};
 
 function modify<TFieldName extends FieldPath<Filters>>(
   form: UseFormReturn<Filters>,
   field: TFieldName,
-  mapper: (
-    current: FieldPathValue<Filters, TFieldName>,
-  ) => FieldPathValue<Filters, TFieldName>,
+  mapper: (current: FieldPathValue<Filters, TFieldName>) => FieldPathValue<Filters, TFieldName>,
 ): () => void {
-  return () =>
-    form.setValue(
-      field,
-      mapper(form.getValues()[field] as FieldPathValue<Filters, TFieldName>),
-    );
+  return () => {
+    form.setValue(field, mapper(form.getValues()[field] as FieldPathValue<Filters, TFieldName>));
+  };
 }
 
 export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {
@@ -78,22 +72,22 @@ export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {
   useEffect(() => {
     const binds: [string | string[], (event: KeyboardEvent) => void][] = [
       [['Escape'], unfocus],
-      ['q', (): void => form.setFocus('query')],
-      ['f', (): void => form.setFocus('file')],
-      ['x', (): void => form.setFocus('excludeFile')],
+      ['q', (): void => { form.setFocus('query'); }],
+      ['f', (): void => { form.setFocus('file'); }],
+      ['x', (): void => { form.setFocus('excludeFile'); }],
       ['i', modify(form, 'caseInsensitive', (cur) => !cur)],
-      ['[', (): void => form.setFocus('numLinesBefore')],
-      [']', (): void => form.setFocus('numLinesAfter')],
-      ['s', (): void => { navigate(`/${createUrlParams(form.getValues())}`) }],
-      ['?', (): void => setOpen((open) => !open)],
+      ['[', (): void => { form.setFocus('numLinesBefore'); }],
+      [']', (): void => { form.setFocus('numLinesAfter'); }],
+      ['s', (): void => { void navigate(`/${createUrlParams(form.getValues())}`) }],
+      ['?', (): void => { setOpen((open) => !open); }],
 
-      ['r', (): void => { navigate('/') }],
+      ['r', (): void => { void navigate('/') }],
       ['t', modify(form, 'excludeFile', (cur) => cur === testFileRegex ? '' : testFileRegex)],
 
-      ['k', (): void => dispatch([ACTION.SELECT_PREVIOUS])],
-      [['ArrowUp'], (): void => dispatch([ACTION.SELECT_PREVIOUS])],
-      ['j', (): void => dispatch([ACTION.SELECT_NEXT])],
-      [['ArrowDown'], (): void => dispatch([ACTION.SELECT_NEXT])],
+      ['k', (): void => { dispatch([ACTION.SELECT_PREVIOUS]); }],
+      [['ArrowUp'], (): void => { dispatch([ACTION.SELECT_PREVIOUS]); }],
+      ['j', (): void => { dispatch([ACTION.SELECT_NEXT]); }],
+      [['ArrowDown'], (): void => { dispatch([ACTION.SELECT_NEXT]); }],
     ];
 
     URL_GENERATORS.forEach(({ key, url }) => {
@@ -101,10 +95,10 @@ export function useKeyboardShortcuts(): [boolean, (open: boolean) => void] {
       binds.push([key.toUpperCase(), goToDispatcher(navigate, url, true)]);
     });
 
-    binds.forEach(([sequence, callback]) => listener.bind(sequence, callback));
+    binds.forEach(([sequence, callback]) => { listener.bind(sequence, callback); });
 
-    return (): void => binds.forEach(([sequence]) => listener.unbind(sequence));
-  }, [navigate]);
+    return (): void => { binds.forEach(([sequence]) => { listener.unbind(sequence); }); };
+  }, [navigate, form]);
 
   return [open, setOpen];
 }

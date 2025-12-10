@@ -6,11 +6,7 @@ import type { Control } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { createUrlParams } from '../pages/store/url-params';
 import { LuArrowDown, LuArrowUp } from 'react-icons/lu';
-
-export function unfocus(): void {
-  const elem = document.activeElement;
-  if (elem instanceof HTMLElement) elem.blur();
-}
+import { unfocus } from '../pages/keyboard/use-keyboard-shortcuts';
 
 function TextInput({
   name,
@@ -29,7 +25,7 @@ function TextInput({
     <Controller
       render={({ field }) => (
         <input
-          className="h-8 text-base px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="h-8 rounded-md border border-gray-300 bg-white px-2 py-1 text-base text-gray-900 focus:ring-2 focus:ring-blue-400 focus:outline-none"
           style={{ width, textAlign: ta }}
           {...field}
           {...props}
@@ -56,9 +52,10 @@ function ToggleButton({
       render={({ field: { value, onChange } }) => (
         <button
           type="button"
-          onClick={() => onChange(!value)}
-          className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors duration-150
-            ${value ? 'bg-blue-200 text-blue-700' : 'bg-gray-100 text-gray-400 hover:bg-blue-100'}`}
+          onClick={() => {
+            onChange(!value);
+          }}
+          className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-150 ${value ? 'bg-blue-200 text-blue-700' : 'bg-gray-100 text-gray-400 hover:bg-blue-100'}`}
         >
           {children}
         </button>
@@ -72,65 +69,39 @@ export function Header(): ReactNode {
   const navigate = useNavigate();
 
   return (
-    <div className="p-1.5 border-b border-gray-200 bg-white">
+    <div className="border-b border-gray-200 bg-white p-1.5">
       <form
-        onSubmit={form.handleSubmit((values) => {
-          navigate(`/${createUrlParams(values)}`);
-          unfocus();
-        })}
+        onSubmit={(e) => {
+          void form.handleSubmit((values) => {
+            void navigate(`/${createUrlParams(values)}`);
+            unfocus();
+          })(e);
+        }}
         className="flex items-center justify-center gap-2"
       >
-        <TextInput
-          name="query"
-          control={form.control}
-          width={300}
-          placeholder="Line filter"
-        />
-        <TextInput
-          name="file"
-          control={form.control}
-          width={250}
-          placeholder="File path filter"
-        />
-        <TextInput
-          name="excludeFile"
-          control={form.control}
-          width={250}
-          placeholder="Exclude path filter"
-        />
+        <TextInput name="query" control={form.control} width={300} placeholder="Line filter" />
+        <TextInput name="file" control={form.control} width={250} placeholder="File path filter" />
+        <TextInput name="excludeFile" control={form.control} width={250} placeholder="Exclude path filter" />
 
         <div className="flex items-center gap-1" title="Lines before">
           <LuArrowUp className="text-gray-400" />
-          <TextInput
-            name="numLinesBefore"
-            control={form.control}
-            width={40}
-            ta="right"
-          />
+          <TextInput name="numLinesBefore" control={form.control} width={40} ta="right" />
         </div>
 
         <div className="flex items-center gap-1" title="Lines after">
           <LuArrowDown className="text-gray-400" />
-          <TextInput
-            name="numLinesAfter"
-            control={form.control}
-            width={40}
-            ta="right"
-          />
+          <TextInput name="numLinesAfter" control={form.control} width={40} ta="right" />
         </div>
 
         <ToggleButton name="caseInsensitive" control={form.control}>
-          <span
-            className="text-xs font-semibold select-none text-gray-600 px-1"
-            title="Case-sensitive"
-          >
+          <span className="px-1 text-xs font-semibold text-gray-600 select-none" title="Case-sensitive">
             Aa
           </span>
         </ToggleButton>
 
         <button
           type="submit"
-          className="h-8 gap-1.5 rounded-md text-sm bg-blue-500 text-white border border-blue-700 px-4 shadow hover:bg-blue-600 transition-colors duration-150"
+          className="h-8 gap-1.5 rounded-md border border-blue-700 bg-blue-500 px-4 text-sm text-white shadow transition-colors duration-150 hover:bg-blue-600"
         >
           Search
         </button>

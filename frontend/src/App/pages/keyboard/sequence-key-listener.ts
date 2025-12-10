@@ -18,33 +18,26 @@ class SequenceKeyListener {
   }
 
   bind(sequence: string[] | string, callback: Callback): void {
-    if (this.target && isEmpty(this.root))
-      this.target.addEventListener('keydown', this.keyDownHandler);
+    if (this.target && isEmpty(this.root)) this.target.addEventListener('keydown', this.keyDownHandler);
 
     sequence = Array.isArray(sequence) ? sequence : sequence.split('');
     let obj: Node = this.root;
     for (let i = 0; i < sequence.length; i++) {
       const key = sequence[i];
-      if (obj[key] == null) obj[key] = {};
+      obj[key] ??= {};
       obj = obj[key];
 
       if (obj.callback)
-        throw new Error(
-          `Cannot bind sequence ${sequence}: ${sequence.slice(
-            0,
-            i,
-          )} already bound`,
-        );
+        throw new Error(`Cannot bind sequence ${String(sequence)}: ${String(sequence.slice(0, i))} already bound`);
     }
 
-    if (Object.keys(obj).length > 0)
-      throw new Error(`Other sequence starting with ${sequence} already bound`);
+    if (Object.keys(obj).length > 0) throw new Error(`Other sequence starting with ${String(sequence)} already bound`);
     obj.callback = callback;
   }
 
-  unbind(sequence: string[] | string, obj?: Node, index: number = 0): void {
+  unbind(sequence: string[] | string, obj?: Node, index = 0): void {
     sequence = Array.isArray(sequence) ? sequence : sequence.split('');
-    obj = obj || this.root;
+    obj ??= this.root;
     if (index >= sequence.length) {
       if (obj.callback) {
         delete obj.callback;
@@ -55,15 +48,15 @@ class SequenceKeyListener {
       if (obj[c] != null) {
         this.unbind(sequence, obj[c], index + 1);
         if (Object.keys(obj[c]).length === 0) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete obj[c];
         }
-        if (this.target && isEmpty(this.root))
-          this.target.removeEventListener('keydown', this.keyDownHandler);
+        if (this.target && isEmpty(this.root)) this.target.removeEventListener('keydown', this.keyDownHandler);
         return;
       }
     }
 
-    throw new Error('Cannot unbind missing sequence ' + sequence);
+    throw new Error('Cannot unbind missing sequence ' + String(sequence));
   }
 
   _keyDownHandler(event: KeyboardEvent): void {
@@ -71,8 +64,7 @@ class SequenceKeyListener {
     if (
       key !== 'Escape' &&
       target instanceof HTMLInputElement &&
-      (target.getAttribute('type') === 'text' ||
-        target.getAttribute('type') == null)
+      (target.getAttribute('type') === 'text' || target.getAttribute('type') == null)
     )
       return; // Ignore keys while typing in some <input, except the Escape key to unfocus
     if (altKey || ctrlKey || metaKey) {

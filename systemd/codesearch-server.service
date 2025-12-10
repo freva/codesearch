@@ -2,7 +2,7 @@
 Description=Codesearch HTTP server
 
 [Service]
-ExecStart=%h/.go/bin/cserver --config %h/dev/codesearch/config
+ExecStart=%h/.go/bin/cserver --config %h/git/freva/codesearch/config
 Restart=always
 RestartSec=1
 

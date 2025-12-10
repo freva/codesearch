@@ -67,4 +67,5 @@ export type ActionData =
   | [ACTION.SET_SEARCH_RESULT, HttpResultState<SearchResult> | undefined]
   | [ACTION.SET_FILE_RESULT, HttpResultState<FileResult> | undefined];
 
-export { SearchContextProvider, useSearchContext, dispatch } from './provider';
+export { useSearchContext, dispatch } from './context';
+export { SearchContextProvider } from './provider';

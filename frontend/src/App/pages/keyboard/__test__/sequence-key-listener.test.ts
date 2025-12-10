@@ -1,10 +1,10 @@
 import { expect, test, vi } from 'vitest';
-import { listener } from '../sequence-key-listener.ts';
+import { listener } from '../sequence-key-listener';
 
 test('bind and unbind', () => {
-  const func1 = (): void => {};
-  const func2 = (): void => {};
-  const func3 = (): void => {};
+  const func1 = (): number => 0;
+  const func2 = (): number => 0;
+  const func3 = (): number => 0;
 
   listener.bind('abc', func1);
   listener.bind('d', func2);
@@ -28,19 +28,19 @@ test('bind and unbind', () => {
 });
 
 test('invalid binds and unbinds', () => {
-  const func = (): void => {};
+  const func = (): number => 0;
   listener.bind('abc', func);
-  expect(() => listener.bind('ab', func)).toThrow(
-    'Other sequence starting with a,b already bound',
-  );
+  expect(() => {
+    listener.bind('ab', func);
+  }).toThrow('Other sequence starting with a,b already bound');
 
-  expect(() => listener.bind('abcd', func)).toThrow(
-    'Cannot bind sequence a,b,c,d: a,b already bound',
-  );
+  expect(() => {
+    listener.bind('abcd', func);
+  }).toThrow('Cannot bind sequence a,b,c,d: a,b already bound');
 
-  expect(() => listener.unbind('ab')).toThrow(
-    'Cannot unbind missing sequence a,b',
-  );
+  expect(() => {
+    listener.unbind('ab');
+  }).toThrow('Cannot unbind missing sequence a,b');
   listener.unbind('abc');
 });
 
@@ -51,12 +51,7 @@ test('sequence callbacks called', () => {
   const fn2 = vi.fn();
   listener.bind('abc', fn1);
   listener.bind('d', fn2);
-  const triggerKeyAndAssertFnCalls = (
-    key: string,
-    ctrlKey: boolean,
-    fn1count: number,
-    fn2count: number,
-  ): void => {
+  const triggerKeyAndAssertFnCalls = (key: string, ctrlKey: boolean, fn1count: number, fn2count: number): void => {
     listener.keyDownHandler(new KeyboardEvent('keydown', { key, ctrlKey }));
     expect(fn1).toHaveBeenCalledTimes(fn1count);
     expect(fn2).toHaveBeenCalledTimes(fn2count);

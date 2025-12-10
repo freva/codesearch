@@ -55,12 +55,8 @@ function Column({
             <div>
               {keys.map((key, i2: number) => (
                 <Fragment key={i2}>
-                  {i2 > 0 && (
-                    <span className="text-gray-400 mx-0.5">{joiner}</span>
-                  )}
-                  <kbd className="px-1.5 py-0.5 border border-gray-300 rounded bg-gray-50 font-mono text-sm">
-                    {key}
-                  </kbd>
+                  {i2 > 0 && <span className="mx-0.5 text-gray-400">{joiner}</span>}
+                  <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-sm">{key}</kbd>
                 </Fragment>
               ))}
             </div>
@@ -76,24 +72,29 @@ export function KeyboardShortcuts(): ReactNode {
   const [open, setOpen] = useKeyboardShortcuts();
   if (!open) return null;
 
-  const onClose = (): void => setOpen(false);
+  const onClose = (): void => {
+    setOpen(false);
+  };
   return (
     <div
-      className="fixed inset-0 w-screen h-screen bg-black/40 z-[1000] flex items-center justify-center"
+      className="fixed inset-0 z-[1000] flex h-screen w-screen items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div
-        className="bg-white p-8 rounded-lg min-w-[300px] max-w-[90vw] max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className="max-h-[90vh] max-w-[90vw] min-w-[300px] overflow-y-auto rounded-lg bg-white p-8"
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
-        <div className="font-bold text-lg mb-4">Keyboard Shortcuts</div>
-        <div className="flex gap-8 flex-wrap">
+        <div className="mb-4 text-lg font-bold">Keyboard Shortcuts</div>
+        <div className="flex flex-wrap gap-8">
           {columns.map((col, i: number) => (
             <Column key={i} {...col} />
           ))}
         </div>
         <button
-          className="mt-8 px-4 py-2 border-none bg-gray-200 rounded cursor-pointer"
+          type="button"
+          className="mt-8 cursor-pointer rounded border-none bg-gray-200 px-4 py-2"
           onClick={onClose}
         >
           Close

@@ -47,38 +47,28 @@ const fileExtensionToLanguage = Object.fromEntries(
     tsx: ['tsx'],
     typescript: ['ts'],
     yaml: ['yaml', 'yml'],
-  }).flatMap(([language, extensions]) =>
-    extensions.map((ext) => [ext, language]),
-  ),
+  }).flatMap(([language, extensions]) => extensions.map((ext) => [ext, language])),
 );
 
 function pathToLanguage(extension: string): string {
   const fileIndex = extension.lastIndexOf('/');
   const extensionIndex = extension.lastIndexOf('.');
-  const ext = extension
-    .substring(Math.max(fileIndex, extensionIndex) + 1)
-    .toLocaleLowerCase();
+  const ext = extension.substring(Math.max(fileIndex, extensionIndex) + 1).toLocaleLowerCase();
   return fileExtensionToLanguage[ext] ?? 'text';
 }
 
 type LineMatch = { line: number; range: Range };
-function getHighlightsForLine(
-  lineIdx: number,
-  ranges: LineMatch[],
-): [number, number][] {
+function getHighlightsForLine(lineIdx: number, ranges: LineMatch[]): [number, number][] {
   return ranges.filter((r) => r.line - 1 === lineIdx).map((r) => r.range);
 }
 
-function renderPrismTokens(
-  tokens: Prism.TokenStream,
-  highlights: [number, number][],
-): ReactNode[] {
+function renderPrismTokens(tokens: Prism.TokenStream, highlights: [number, number][]): ReactNode[] {
   let charIdx = 0;
   let highlightIdx = 0;
   let openHighlight = false;
 
   function walk(token: Prism.TokenStream): ReactNode[] {
-    let nodes: ReactNode[] = [];
+    const nodes: ReactNode[] = [];
     for (const part of Array.isArray(token) ? token : [token]) {
       if (typeof part === 'string') {
         for (let i = 0; i < part.length; ) {
@@ -88,14 +78,12 @@ function renderPrismTokens(
             openHighlight = false;
             highlightIdx++;
           }
-          const nextHighlightStart =
-            highlights[highlightIdx]?.[0] ?? part.length + charIdx;
-          const nextHighlightEnd =
-            highlights[highlightIdx]?.[1] ?? part.length + charIdx;
-          let chunkEnd = openHighlight
+          const nextHighlightStart = highlights[highlightIdx]?.[0] ?? part.length + charIdx;
+          const nextHighlightEnd = highlights[highlightIdx]?.[1] ?? part.length + charIdx;
+          const chunkEnd = openHighlight
             ? Math.min(nextHighlightEnd - charIdx + i, part.length)
             : Math.min(nextHighlightStart - charIdx + i, part.length);
-          let chunk = part.slice(i, chunkEnd);
+          const chunk = part.slice(i, chunkEnd);
           if (openHighlight) {
             nodes.push(
               <span className="highlight" key={nodes.length}>
@@ -110,10 +98,7 @@ function renderPrismTokens(
         }
       } else if (typeof part === 'object' && part !== null) {
         nodes.push(
-          <span
-            key={nodes.length}
-            className={part.type ? `token ${part.type}` : undefined}
-          >
+          <span key={nodes.length} className={part.type ? `token ${part.type}` : undefined}>
             {walk(part.content)}
           </span>,
         );
@@ -124,11 +109,7 @@ function renderPrismTokens(
   return walk(tokens);
 }
 
-function highlightCodeReact(
-  code: string,
-  language: string,
-  ranges: LineMatch[],
-): ReactNode {
+function highlightCodeReact(code: string, language: string, ranges: LineMatch[]): ReactNode {
   const lines = code.split('\n');
   const prismLang = Prism.languages[language];
   return (

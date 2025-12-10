@@ -1,23 +1,24 @@
 {
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "moduleResolution": "bundler",
-    "noEmit": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "baseUrl": ".",
-    "resolveJsonModule": true,
+    "jsx": "react-jsx",
     "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
     "strict": true,
-    "target": "ES2020",
+    "noEmit": true,
+
+    "baseUrl": "."
   },
+
   "include": [
     "src",
-    "vite.config.mts"
+    "eslint.config.ts",
+    "vite.config.ts"
   ],
 }

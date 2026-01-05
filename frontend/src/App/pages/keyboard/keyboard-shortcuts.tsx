@@ -56,7 +56,7 @@ function Column({
               {keys.map((key, i2: number) => (
                 <Fragment key={i2}>
                   {i2 > 0 && <span className="mx-0.5 text-gray-400">{joiner}</span>}
-                  <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-sm">{key}</kbd>
+                  <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono">{key}</kbd>
                 </Fragment>
               ))}
             </div>

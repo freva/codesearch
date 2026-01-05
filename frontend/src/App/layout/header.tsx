@@ -101,7 +101,7 @@ export function Header(): ReactNode {
 
         <button
           type="submit"
-          className="h-8 gap-1.5 rounded-md border border-blue-700 bg-blue-500 px-4 text-sm text-white shadow transition-colors duration-150 hover:bg-blue-600"
+          className="h-8 gap-1.5 rounded-md border border-blue-700 bg-blue-500 px-4 text-white shadow transition-colors duration-150 hover:bg-blue-600"
         >
           Search
         </button>

@@ -29,18 +29,18 @@ function CodeLine({ line, directory, path }: { line: Line; directory: string; pa
 }
 
 function Hit({ file }: { file: File }): ReactNode {
+  const filePath = `${file.directory}/${file.path}`;
   return (
-    <div className="my-2 w-full overflow-hidden rounded-lg border border-gray-300 bg-white text-gray-900 shadow-sm">
-      <div className="flex items-center border-b border-gray-300 bg-gray-100 p-0.5">
-        <Link
-          to={`/file/${file.directory}/${file.path}${window.location.search}`}
-          className="px-1 text-base font-medium text-blue-600 hover:text-blue-800"
-        >
-          {file.directory}/{file.path}
-        </Link>
-      </div>
+    <div className="my-2 w-full">
+      <Link
+        to={`/file/${file.directory}/${file.path}${window.location.search}`}
+        className="truncate px-2 py-1 font-medium text-blue-600 hover:text-blue-800"
+        title={filePath}
+      >
+        {filePath}
+      </Link>
       {file.lines && (
-        <div>
+        <div className="overflow-hidden rounded-sm border border-gray-300 bg-white shadow-sm">
           {file.lines.map((line, i, arr) => (
             <Fragment key={line.number}>
               {arr[i - 1]?.number < line.number - 1 && <div className="h-px w-full bg-gray-300" />}

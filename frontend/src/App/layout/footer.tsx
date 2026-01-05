@@ -28,7 +28,7 @@ export function Footer(): ReactNode {
       <div className="h-px bg-gray-300" />
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
-          <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono text-sm">?</kbd>
+          <kbd className="rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 font-mono">?</kbd>
           <span className="text-gray-600">toggle help</span>
         </div>
         <span className="text-gray-700">{text}</span>

@@ -1,4 +1,4 @@
-import type { DependencyList } from 'react';
+import { type DependencyList, useEffect } from 'react';
 import { useCallback, useRef } from 'react';
 import { isEqual } from 'lodash';
 
@@ -15,4 +15,13 @@ export function useCustomCompareCallback<T>(
 ): (...args: DependencyList) => T {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(callback, useCustomCompareMemoize(deps, depsEqual));
+}
+
+export function useCustomCompareEffect(
+  effect: () => void,
+  deps: DependencyList,
+  depsEqual?: (a: DependencyList, b: DependencyList) => boolean,
+): void {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(effect, useCustomCompareMemoize(deps, depsEqual));
 }

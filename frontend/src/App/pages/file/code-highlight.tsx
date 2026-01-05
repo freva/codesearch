@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState } from 'react';
+import { useCustomCompareEffect } from '../../libs/use-custom-compare-callback';
 import Prism from 'prismjs';
 import type { Range } from '../store';
 
@@ -139,7 +140,7 @@ export function CodeHighlight({
   ranges?: LineMatch[];
 }): ReactNode {
   const [content, setContent] = useState<ReactNode>(<pre>{code}</pre>);
-  useEffect(() => {
+  useCustomCompareEffect(() => {
     const language = pathToLanguage(path);
     setContent(highlightCodeReact(code, language, ranges));
   }, [code, path, ranges]);

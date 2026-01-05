@@ -34,7 +34,7 @@ function FileContent({ code, path, ranges }: { code: string; path: string; range
   }, [hash]);
 
   return (
-    <div className="flex flex-row overflow-hidden rounded-lg border border-gray-300 font-mono">
+    <div className="flex flex-row overflow-hidden rounded-sm border border-gray-300 font-mono">
       <div className="flex flex-col border-r border-gray-200 bg-gray-50 select-none">
         {Array.from({ length: countLines(code) })
           .map((_, i) => i + 1)
@@ -42,7 +42,7 @@ function FileContent({ code, path, ranges }: { code: string; path: string; range
             <Link
               to={{ hash: `#L${i}` }}
               key={i}
-              className="flex w-12 items-center justify-end px-2 text-gray-500 hover:text-blue-600"
+              className="flex h-[calc(var(--spacing)*6)] w-12 justify-end px-2 text-gray-500 hover:text-blue-600"
             >
               {i}
             </Link>
@@ -71,7 +71,7 @@ export function File(): ReactNode {
   const parts = `${result!.directory}/${result!.path}`.split('/');
   return (
     <div className="mx-auto w-full max-w-none px-2 py-1">
-      <div className="my-1 flex flex-wrap items-center gap-1 text-sm text-gray-600">
+      <div className="my-1 flex flex-wrap items-center gap-1 text-gray-600">
         {parts.map((name, i, arr) => (
           <span key={`${i}-${name}`} className="inline">
             {i > 0 ? <span className="mx-1 text-gray-400">/</span> : null}

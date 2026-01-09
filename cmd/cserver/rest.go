@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,13 +36,13 @@ type File struct {
 
 // path must be relative to the serving directory.
 func resolvePath(manifest *config.Manifest, path string) *File {
-	path = strings.TrimPrefix(path, "/")
+	path = strings.Trim(path, "/")
 	parts := strings.Split(path, "/")
 	if len(parts) >= 3 {
 		prefix := filepath.Join(parts[:3]...)
 		repo, ok := manifest.Repositories[prefix]
 		if ok {
-			return &File{Repository: repo, Relpath: path[len(prefix)+1:], WebURL: manifest.Servers[repo.Server]}
+			return &File{Repository: repo, Relpath: path[min(len(path), len(prefix)+1):], WebURL: manifest.Servers[repo.Server]}
 		}
 	}
 	return nil
@@ -481,5 +482,62 @@ func RestFileHandler(w http.ResponseWriter, request *http.Request) {
 		}
 
 		return restShowFile(w, manifest, path, query, ignoreCase)
+	})
+}
+
+func RestListHandler(w http.ResponseWriter, r *http.Request) {
+	handleError(w, func() error {
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+		path := r.Form.Get("p")
+		if strings.Contains(path, "..") {
+			return fmt.Errorf("Path cannot contain \"..\"")
+		}
+		dirPath := filepath.Join(CodeDir, path)
+		entries, err := os.ReadDir(dirPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read directory: %w", err)
+		}
+
+		files := make([]string, 0)
+		directories := make([]string, 0)
+		for _, entry := range entries {
+			if entry.IsDir() {
+				if entry.Name() != ".git" {
+					directories = append(directories, entry.Name())
+				}
+			} else {
+				files = append(files, entry.Name())
+			}
+		}
+
+		manifest, err := config.ReadManifest(ManifestPath)
+		if err != nil {
+			return fmt.Errorf("Failed to read manifest: %w", err)
+		}
+
+		setHeaders(w)
+		if err := writeJsonFileHeader(w, manifest, path, nil); err != nil {
+			if _, err := w.Write([]byte(fmt.Sprintf("{\"directory\":\"%s\",", escapeJsonString(strings.Trim(path, "/"))))); err != nil {
+				return err
+			}
+		} else if _, err := w.Write([]byte(",")); err != nil {
+			return err
+		}
+
+		filesJson, err := json.Marshal(files)
+		if err != nil {
+			return fmt.Errorf("Failed to marshal files: %w", err)
+		}
+		dirsJson, err := json.Marshal(directories)
+		if err != nil {
+			return fmt.Errorf("Failed to marshal directories: %w", err)
+		}
+
+		if _, err := w.Write([]byte(fmt.Sprintf("\"files\":%s,\"directories\":%s,\"updatedAt\":%d}", filesJson, dirsJson, manifest.UpdatedAt.UnixMilli()))); err != nil {
+			return err
+		}
+		return nil
 	})
 }

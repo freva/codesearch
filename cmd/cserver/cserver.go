@@ -75,6 +75,7 @@ Start HTTP server, serving a search and view interface of a source tree.`)
 	http.HandleFunc("/rest/manifest", manifestHandler)
 	http.HandleFunc("/rest/file", RestFileHandler)
 	http.HandleFunc("/rest/search", RestSearchHandler)
+	http.HandleFunc("/rest/list", RestListHandler)
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Port), nil); err != nil {
 		log.Fatal("ListenAndServe failed: ", err)
 	}

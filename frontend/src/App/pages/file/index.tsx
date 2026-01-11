@@ -78,7 +78,7 @@ export function File(): ReactNode {
             {i === arr.length - 1 ? (
               <span className="font-medium text-gray-900">{name}</span>
             ) : (
-              <Link to={'/file/' + arr.slice(0, i + 1).join('/')} className="text-blue-600 hover:text-blue-800">
+              <Link to={'/list/' + arr.slice(0, i + 1).join('/')} className="text-blue-600 hover:text-blue-800">
                 {name}
               </Link>
             )}

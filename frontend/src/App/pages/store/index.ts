@@ -36,6 +36,12 @@ export type FileResult = FileHeader & {
   updatedAt: number;
 };
 
+export type ListResult = Partial<FileHeader> & {
+  files: string[];
+  directories: string[];
+  updatedAt: number;
+};
+
 type HttpResultState<T> = {
   loading: boolean;
   error?: { message: string };

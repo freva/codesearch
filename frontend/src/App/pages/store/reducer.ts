@@ -63,7 +63,7 @@ function _preReducer(state: State, [action, data]: ActionData): State {
       return selectNode(state, true);
 
     case ACTION.SET_SEARCH_RESULT:
-      return selectNode({ ...state, searchResult: data }, true);
+      return selectNode({ ...state, searchResult: data, fileResult: undefined }, true);
     case ACTION.SET_FILE_RESULT: {
       const match = /^#L(\d+)$/.exec(window.location.hash);
       const selectedHit = data?.result

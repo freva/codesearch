@@ -33,7 +33,7 @@ function Hit({ file }: { file: File }): ReactNode {
   return (
     <div className="my-2 w-full">
       <Link
-        to={`/file/${file.directory}/${file.path}${window.location.search}`}
+        to={`${filePath.endsWith('/') ? '/list' : '/file'}/${filePath}${window.location.search}`}
         className="truncate px-2 py-1 font-medium text-blue-600 hover:text-blue-800"
         title={filePath}
       >

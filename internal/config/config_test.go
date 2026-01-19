@@ -48,7 +48,6 @@ workdir = ./data
 webdir = ../web/dir
 
 [server github]
-url = git@github.com
 exclude = ^my-org/private-.*
 include = my-org/public-repo#main
 include = another-org/repo2
@@ -75,7 +74,7 @@ include = internal-org/internal-repo
 				"github": {
 					Name:     "github",
 					ApiURL:   "https://api.github.com",
-					CloneURL: "git@github.com",
+					CloneURL: "https://github.com",
 					WebURL:   "https://github.com",
 					Exclude:  "^my-org/private-.*",
 					Include: []Include{
@@ -149,18 +148,6 @@ url = https://github.com
 weburl = https://github.com
 `
 		assertConfigError(t, content, "missing required 'webdir' setting")
-	})
-
-	t.Run("missing required server settings", func(t *testing.T) {
-		content := `
-workdir = ./data
-webdir = /var/www/html
-
-[server github]
-api = https://api.github.com
-# Missing url
-`
-		assertConfigError(t, content, "server 'github' missing required 'url' setting")
 	})
 
 	t.Run("invalid line format", func(t *testing.T) {

@@ -153,7 +153,7 @@ func (c *Config) parseConfig(file *os.File) error {
 
 			switch sectionType {
 			case "server":
-				currentServer = &Server{Name: sectionName, ApiURL: "https://api.github.com", WebURL: "https://github.com"}
+				currentServer = &Server{Name: sectionName, ApiURL: "https://api.github.com", WebURL: "https://github.com", CloneURL: "https://github.com"}
 				c.Servers[sectionName] = currentServer
 			}
 		} else if matches := assignRegex.FindStringSubmatch(line); len(matches) == 3 {
@@ -235,7 +235,7 @@ The 'server' section names a GitHub server and allows these settings:
              OWNER/REPO#REF - a specific repository at a specific commit.
   'token': An OAuth2 token, e.g. a personal access token.
   'weburl': URL to the web interface of the server. [https://github.com]
-  'url': Base URL for cloning: git@github.com, https://github.com. Required.`
+  'url': Base URL for cloning. [https://github.com]`
 }
 
 func (c *Config) parseGlobalVar(key, value, loc string) (err error) {

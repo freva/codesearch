@@ -258,7 +258,7 @@ func executeGraphQLQuery[T any](client *http.Client, server *config.Server, body
 	if err != nil {
 		return nil, fmt.Errorf("invalid API URL '%s': %w", server.ApiURL, err)
 	}
-	apiURL.Path = "/graphql"
+	apiURL.Path += "/graphql"
 
 	req, err := http.NewRequest("POST", apiURL.String(), bytes.NewBuffer(body))
 	if err != nil {

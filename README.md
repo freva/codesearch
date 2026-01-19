@@ -43,8 +43,6 @@ webdir = cmd/cserver/static
 exclude = ^DEPRECATED
 include = freva
 include = torvalds/linux  
-token = ghp_XXXXXXXXXXXXXXXXXXXX
-url = git@github.com
 
 [server internal]
 api = https://git.example.com/api

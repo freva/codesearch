@@ -16,7 +16,6 @@ Configuration is done via a config file. The format is as follows:
 - `index`: Path to the code index file. Default: `[workdir]/csearch.index`
 - `port`: Port for the server. Default: `80`
 - `manifest`: Path to the manifest file. Default: `[workdir]/manifest.json`
-- `webdir`: Path to static web assets served by the server. Required.
 - `workdir`: Working directory managed by the program. Required.
 
 **Server section (`[server NAME]`):**
@@ -37,7 +36,6 @@ Configuration is done via a config file. The format is as follows:
 code = db
 index = /home/user/.csearchindex
 port = 8080
-webdir = cmd/cserver/static
 
 [server github]
 exclude = ^DEPRECATED

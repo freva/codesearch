@@ -45,7 +45,6 @@ func TestReadConfig(t *testing.T) {
 	t.Run("valid minimal config file", func(t *testing.T) {
 		content := `
 workdir = ./data
-webdir = ../web/dir
 
 [server github]
 exclude = ^my-org/private-.*
@@ -69,7 +68,6 @@ include = internal-org/internal-repo
 			FileListsDir:  path.Join(configFileDir, "data/filelists"),
 			ManifestPath:  path.Join(configFileDir, "data/manifest.json"),
 			Port:          80,
-			WebDir:        path.Join(configFileDir, "../web/dir"),
 			Servers: map[string]*Server{
 				"github": {
 					Name:     "github",
@@ -108,7 +106,6 @@ fileindex = fileindex.idx
 filelists = data/../filelists
 manifest   = mf.json
 port=1234
-webdir= ../web/dir
 workdir =~/data
 `
 		configPath := createTempConfigFile(t, content)
@@ -121,7 +118,6 @@ workdir =~/data
 			FileListsDir:  path.Join(configFileDir, "filelists"),
 			ManifestPath:  path.Join(configFileDir, "mf.json"),
 			Port:          1234,
-			WebDir:        path.Join(configFileDir, "../web/dir"),
 			Servers:       map[string]*Server{},
 			configPath:    configPath,
 			configFileDir: configFileDir,
@@ -142,12 +138,12 @@ workdir =~/data
 
 	t.Run("missing required global settings", func(t *testing.T) {
 		content := `
-# Missing workdir and webdir
+# Missing workdir
 [server github]
 url = https://github.com
 weburl = https://github.com
 `
-		assertConfigError(t, content, "missing required 'webdir' setting")
+		assertConfigError(t, content, "missing required 'workdir' setting")
 	})
 
 	t.Run("invalid line format", func(t *testing.T) {
@@ -162,7 +158,6 @@ invalid line
 		content := `
 port = abc
 workdir = ./data
-webdir = /var/www/html
 `
 		assertConfigError(t, content, "invalid port number: abc")
 	})
@@ -171,7 +166,6 @@ webdir = /var/www/html
 		content := `
 unknown_global = value
 workdir = ./data
-webdir = /var/www/html
 `
 		assertConfigError(t, content, ":2: unknown global configuration key: 'unknown_global'")
 	})
@@ -179,20 +173,18 @@ webdir = /var/www/html
 	t.Run("unknown server key", func(t *testing.T) {
 		content := `
 workdir = ./data
-webdir = /var/www/html
 [server test]
 api = test
 url = test
 weburl = test
 unknown_server_key = value
 `
-		assertConfigError(t, content, ":8: unknown key 'unknown_server_key' in server 'test'")
+		assertConfigError(t, content, ":7: unknown key 'unknown_server_key' in server 'test'")
 	})
 
 	t.Run("invalid exclude regex", func(t *testing.T) {
 		content := `
 workdir = ./data
-webdir = /var/www/html
 [server test]
 api = test
 url = test
@@ -205,7 +197,6 @@ exclude = [invalid regex
 	t.Run("invalid include format", func(t *testing.T) {
 		content := `
 workdir = ./data
-webdir = /var/www/html
 [server test]
 api = test
 url = test

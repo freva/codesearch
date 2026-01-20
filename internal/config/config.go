@@ -50,7 +50,6 @@ type Config struct {
 	FileListsDir  string
 	ManifestPath  string
 	Port          int
-	WebDir        string
 
 	// Sections
 	Servers map[string]*Server
@@ -182,9 +181,6 @@ func (c *Config) parseConfig(file *os.File) error {
 		}
 	}
 
-	if c.WebDir == "" {
-		return fmt.Errorf("%s: missing required 'webdir' setting", c.configPath)
-	}
 	if c.workDir == "" {
 		return fmt.Errorf("%s: missing required 'workdir' setting", c.configPath)
 	}
@@ -222,7 +218,6 @@ Global settings:
   'index': Path to codesearch index file. [workdir/csearch.index]
   'port':  Port cserver should listen to. [80]
   'manifest': Path to the manifest file. [workdir/manifest.json]
-  'webdir': Path to freva/codesearch/cmd/cserver/static. Required.
   'workdir': The working directory owned and managed by this program. Required.
 Relative paths are resolved relative to the config file.
 The 'server' section names a GitHub server and allows these settings:
@@ -250,8 +245,6 @@ func (c *Config) parseGlobalVar(key, value, loc string) (err error) {
 		c.CodeIndexPath, err = c.resolvePath(value)
 	case "manifest":
 		c.ManifestPath, err = c.resolvePath(value)
-	case "webdir":
-		c.WebDir, err = c.resolvePath(value)
 	case "workdir":
 		c.workDir, err = c.resolvePath(value)
 	case "port":

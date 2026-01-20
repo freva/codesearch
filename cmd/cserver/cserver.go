@@ -5,13 +5,14 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/freva/codesearch/internal/config"
@@ -19,20 +20,13 @@ import (
 
 var (
 	CodeDir       string
-	WebDir        string
 	ManifestPath  string
 	CodeIndexPath string
 	FileIndexPath string
 )
 
-func staticHandler(w http.ResponseWriter, r *http.Request) {
-	file := "index.html"
-	if strings.HasPrefix(r.URL.Path, "/assets/") {
-		file = r.URL.Path
-	}
-
-	http.ServeFile(w, r, filepath.Join(WebDir, file))
-}
+//go:embed static
+var embedFS embed.FS
 
 func manifestHandler(w http.ResponseWriter, r *http.Request) {
 	handleError(w, func() error {
@@ -51,7 +45,7 @@ func main() {
 	flag.StringVar(&configPath, "config", "", "Path to config file (required).")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, `usage: cserver [OPTION...]
+		_, _ = fmt.Fprintf(os.Stderr, `usage: cserver [OPTION...]
 Start HTTP server, serving a search and view interface of a source tree.`)
 		flag.PrintDefaults()
 	}
@@ -63,7 +57,6 @@ Start HTTP server, serving a search and view interface of a source tree.`)
 	}
 
 	CodeDir = cfg.CodeDir
-	WebDir = cfg.WebDir
 	ManifestPath = cfg.ManifestPath
 	CodeIndexPath = cfg.CodeIndexPath
 	FileIndexPath = cfg.FileIndexPath
@@ -71,7 +64,19 @@ Start HTTP server, serving a search and view interface of a source tree.`)
 		log.Fatal("Failed to stat code index file: " + CodeIndexPath)
 	}
 
-	http.HandleFunc("/", staticHandler)
+	staticFS, err := fs.Sub(embedFS, "static")
+	if err != nil {
+		log.Fatal("Failed to resolve embedded static directory: %w", err)
+	}
+
+	fileServer := http.FileServer(http.FS(staticFS))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/assets/") {
+			r.URL.Path = "/"
+		}
+		fileServer.ServeHTTP(w, r)
+	})
+
 	http.HandleFunc("/rest/manifest", manifestHandler)
 	http.HandleFunc("/rest/file", RestFileHandler)
 	http.HandleFunc("/rest/search", RestSearchHandler)

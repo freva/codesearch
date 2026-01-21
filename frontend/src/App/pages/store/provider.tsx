@@ -94,6 +94,5 @@ export function SearchContextProvider({ children }: PropsWithChildren): ReactNod
     }
   }, [navigate, location.pathname, location.search]);
 
-  // eslint-disable-next-line react-x/no-context-provider
   return <internal.context.Provider value={value}>{children}</internal.context.Provider>;
 }

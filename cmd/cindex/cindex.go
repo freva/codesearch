@@ -53,7 +53,7 @@ With no path arguments, cindex -reset removes the index.
 `
 
 func usage() {
-	fmt.Fprintf(os.Stderr, usageMessage)
+	fmt.Fprint(os.Stderr, usageMessage)
 	os.Exit(2)
 }
 

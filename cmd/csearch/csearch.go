@@ -44,7 +44,7 @@ empty, $HOME/.csearchindex.
 `
 
 func usage() {
-	fmt.Fprintf(os.Stderr, usageMessage)
+	fmt.Fprint(os.Stderr, usageMessage)
 	os.Exit(2)
 }
 

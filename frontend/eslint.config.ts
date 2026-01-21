@@ -20,12 +20,16 @@ export default defineConfig([
       ...tseslint.configs.recommendedTypeChecked,
       ...tseslint.configs.strictTypeChecked,
       ...tseslint.configs.stylisticTypeChecked,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-      reactX.configs.recommended,
-      reactDom.configs.recommended,
       eslintPluginPrettierRecommended,
     ],
+    plugins: {
+      'react-hooks': {
+        rules: reactHooks.rules,
+      },
+      'react-refresh': reactRefresh,
+      'react-x': reactX,
+      'react-dom': reactDom,
+    },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,

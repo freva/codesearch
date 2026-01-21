@@ -1,11 +1,13 @@
-import { type DependencyList, useEffect } from 'react';
-import { useCallback, useRef } from 'react';
-import { isEqual } from 'lodash';
+import { type DependencyList, useCallback, useEffect, useState } from 'react';
+import { isEqual } from 'lodash-es';
 
-export function useCustomCompareMemoize<T>(deps: T, depsEqual = isEqual): T {
-  const ref = useRef<T | undefined>(undefined);
-  if (!ref.current || !depsEqual(ref.current, deps)) ref.current = deps;
-  return ref.current;
+export function useCustomCompareMemoize(
+  deps: DependencyList,
+  depsEqual: (a: DependencyList, b: DependencyList) => boolean = isEqual,
+): DependencyList {
+  const [currentValue, setCurrentValue] = useState(deps);
+  if (!depsEqual(deps, currentValue)) setCurrentValue(deps);
+  return currentValue;
 }
 
 export function useCustomCompareCallback<T>(
@@ -13,7 +15,6 @@ export function useCustomCompareCallback<T>(
   deps: DependencyList,
   depsEqual?: (a: DependencyList, b: DependencyList) => boolean,
 ): (...args: DependencyList) => T {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(callback, useCustomCompareMemoize(deps, depsEqual));
 }
 
@@ -22,6 +23,5 @@ export function useCustomCompareEffect(
   deps: DependencyList,
   depsEqual?: (a: DependencyList, b: DependencyList) => boolean,
 ): void {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(effect, useCustomCompareMemoize(deps, depsEqual));
 }

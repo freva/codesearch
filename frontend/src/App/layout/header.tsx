@@ -55,7 +55,7 @@ function ToggleButton({
           onClick={() => {
             onChange(!value);
           }}
-          className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-150 ${value ? 'bg-blue-200 text-blue-700' : 'bg-gray-100 text-gray-400 hover:bg-blue-100'}`}
+          className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors duration-150 ${value ? 'bg-gray-100 text-gray-400 hover:bg-blue-100' : 'bg-blue-200 text-blue-700'}`}
         >
           {children}
         </button>

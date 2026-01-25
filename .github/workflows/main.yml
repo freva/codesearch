@@ -1,0 +1,90 @@
+name: Main pipeline
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+  release:
+    types: [ published ]
+
+permissions:
+  contents: write
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install Dependencies
+        run: pnpm install -C frontend --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: frontend
+        run: pnpm typecheck
+
+      - name: Lint
+        working-directory: frontend
+        run: pnpm lint
+
+      - name: Test
+        working-directory: frontend
+        run: pnpm test
+
+      - name: Build Frontend
+        run: make ui
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Test Backend
+        run: make test
+
+      - name: Build Go Binaries
+        run: |
+          # os/arch/extension
+          TARGETS=("linux/amd64/" "linux/arm64/" "darwin/amd64/" "darwin/arm64/" "windows/amd64/.exe")
+          
+          for target in "${TARGETS[@]}"; do
+            IFS="/" read -r OS ARCH EXT <<< "$target"
+          
+            echo "Building for $OS-$ARCH..."
+            PLATFORM_DIR="dist/${OS}_${ARCH}"
+            mkdir -p "$PLATFORM_DIR"
+          
+            for d in cmd/*/; do
+              binary_name=$(basename "$d")
+              GOOS=$OS GOARCH=$ARCH go build -o "${PLATFORM_DIR}/${binary_name}${EXT}" "./$d"
+            done
+          
+            VERSION=${{ github.event.release.tag_name || 'dev' }}
+            if [ "$OS" == "windows" ]; then
+              cd dist && zip -r "../codesearch-${VERSION}-${OS}-${ARCH}.zip" "${OS}_${ARCH}" && cd ..
+            else
+              tar -cvzf "codesearch-${VERSION}-${OS}-${ARCH}.tar.gz" -C dist "${OS}_${ARCH}"
+            fi
+          done
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.tar.gz
+            *.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

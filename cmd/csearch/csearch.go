@@ -14,8 +14,8 @@ import (
 	"runtime/pprof"
 	"strings"
 
-	"github.com/google/codesearch/index"
-	"github.com/google/codesearch/regexp"
+	"github.com/freva/codesearch/index"
+	"github.com/freva/codesearch/regexp"
 )
 
 var usageMessage = `usage: csearch [-c] [-f fileregexp] [-h] [-i] [-l] [-n] regexp
@@ -44,7 +44,7 @@ empty, $HOME/.csearchindex.
 `
 
 func usage() {
-	fmt.Fprintf(os.Stderr, usageMessage)
+	fmt.Fprint(os.Stderr, usageMessage)
 	os.Exit(2)
 }
 
@@ -52,6 +52,7 @@ var (
 	fFlag       = flag.String("f", "", "search only files with names matching this regexp")
 	iFlag       = flag.Bool("i", false, "case-insensitive search")
 	htmlFlag    = flag.Bool("html", false, "print HTML output")
+	indexFlag   = flag.String("index", "", "path to index file")
 	verboseFlag = flag.Bool("verbose", false, "print extra information")
 	bruteFlag   = flag.Bool("brute", false, "brute force - search all files in index")
 	cpuProfile  = flag.String("cpuprofile", "", "write cpu profile to this file")
@@ -109,7 +110,7 @@ func Main() {
 		log.Printf("query: %s\n", q)
 	}
 
-	ix := index.Open(index.File())
+	ix := index.Open(index.File(*indexFlag))
 	ix.Verbose = *verboseFlag
 	var post []int
 	if *bruteFlag {

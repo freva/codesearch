@@ -9,6 +9,8 @@ import { Get } from '../../libs/fetcher';
 import { useForm } from 'react-hook-form';
 import { internal } from './context';
 
+const SITE_TITLE = 'Code Search';
+
 function normalizeError(error: unknown): { message: string } {
   if (error instanceof Error) return { message: error.message };
   if (typeof error === 'string') return { message: error };
@@ -27,6 +29,15 @@ function listResultToSearchResult(result: ListResult): SearchResult {
     branch,
   }));
   return { files, hits: 0, matchedFiles: files.length, truncated: false, updatedAt: result.updatedAt };
+}
+
+function setPageTitle(filters: Filters): void {
+  const parts: string[] = [];
+  if (filters.query) parts.push(filters.query);
+  if (filters.file) parts.push(`file:${filters.file}`);
+  if (filters.excludeFile) parts.push(`-file:${filters.excludeFile}`);
+
+  document.title = parts.length > 0 ? `${parts.join(' ')} - ${SITE_TITLE}` : SITE_TITLE;
 }
 
 export function SearchContextProvider({ children }: PropsWithChildren): ReactNode {
@@ -48,6 +59,7 @@ export function SearchContextProvider({ children }: PropsWithChildren): ReactNod
   // Every time the URL changes, update the state
   useLayoutEffect(() => {
     if (location.pathname === '/') {
+      setPageTitle(parseUrlParams(location.search));
       const queryParams = location.search;
       if (queryRef.current === queryParams) return;
       queryRef.current = queryParams;
@@ -66,6 +78,7 @@ export function SearchContextProvider({ children }: PropsWithChildren): ReactNod
           dispatch([ACTION.SET_SEARCH_RESULT, data]);
         });
     } else if (location.pathname.startsWith('/file/')) {
+      document.title = `${location.pathname.substring(6)} - ${SITE_TITLE}`;
       const params = new URLSearchParams(location.search);
       params.set('p', location.pathname.substring(6));
 
@@ -77,6 +90,7 @@ export function SearchContextProvider({ children }: PropsWithChildren): ReactNod
           dispatch([ACTION.SET_FILE_RESULT, data]);
         });
     } else if (location.pathname.startsWith('/list/')) {
+      document.title = `${location.pathname.substring(6)} - ${SITE_TITLE}`;
       const params = new URLSearchParams(location.search);
       params.set('p', location.pathname.substring(6));
 
@@ -88,6 +102,7 @@ export function SearchContextProvider({ children }: PropsWithChildren): ReactNod
           dispatch([ACTION.SET_SEARCH_RESULT, data]);
         });
     } else {
+      document.title = SITE_TITLE;
       void navigate('/', { replace: true });
       dispatch([ACTION.SET_SEARCH_RESULT, undefined]);
       dispatch([ACTION.SET_FILE_RESULT, undefined]);

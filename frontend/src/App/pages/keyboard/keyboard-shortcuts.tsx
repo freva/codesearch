@@ -19,6 +19,7 @@ const columns: {
       { keys: ['i'], description: 'Toggle case sensitivity' },
       { keys: ['s'], description: 'Search' },
       { keys: ['r'], description: 'Reset search form' },
+      { keys: ['t'], description: 'Toggle excluding test files' },
     ],
   },
   {
@@ -32,7 +33,7 @@ const columns: {
     header: 'Open selected file',
     keys: [
       { keys: ['o', 'O'], description: 'In file view (tab / window)' },
-      { keys: ['f', 'F'], description: 'In file in GitHub (tab / window)' },
+      { keys: ['g', 'G'], description: 'In file in GitHub (tab / window)' },
       { keys: ['b', 'B'], description: 'In blame in GitHub (tab / window)' },
       { keys: ['h', 'H'], description: 'In history in GitHub (tab / window)' },
     ],

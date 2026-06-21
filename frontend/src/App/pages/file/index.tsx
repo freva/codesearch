@@ -17,20 +17,11 @@ function FileContent({ code, path, ranges }: { code: string; path: string; range
   const { hash } = useLocation();
   useEffect(() => {
     if (hash.length === 0) return;
-    const fragment = hash.substring(1);
-
-    void (async function (): Promise<void> {
-      for (let i = 0; i < 3; i++) {
-        const element = document.getElementById(fragment);
-        if (element) {
-          for (const elem of document.getElementsByClassName('line highlight')) elem.classList.remove('highlight');
-          element.classList.add('highlight');
-          element.scrollIntoView({ block: 'center' });
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 100)); // thisisfine.jpg
-      }
-    })();
+    const element = document.getElementById(hash.substring(1));
+    if (!element) return;
+    for (const elem of document.getElementsByClassName('line highlight')) elem.classList.remove('highlight');
+    element.classList.add('highlight');
+    element.scrollIntoView({ block: 'center' });
   }, [hash]);
 
   return (

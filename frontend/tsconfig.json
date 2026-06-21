@@ -11,9 +11,7 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "strict": true,
-    "noEmit": true,
-
-    "baseUrl": "."
+    "noEmit": true
   },
 
   "include": [

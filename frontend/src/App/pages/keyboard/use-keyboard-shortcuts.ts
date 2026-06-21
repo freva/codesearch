@@ -11,13 +11,19 @@ const testFileRegex = '/tests?/|_tests?\\b|Tests?[^a-z]|/systemtests/|\\.html$';
 
 const pathAnchor = (hit: SelectedHit): string => `${hit.path}${hit.line > 0 ? `#L${hit.line}` : ''}`;
 
+const isDirectory = (hit: SelectedHit): boolean => hit.path.endsWith('/');
+
 export function unfocus(): void {
   const elem = document.activeElement;
   if (elem instanceof HTMLElement) elem.blur();
 }
 
-function ghUrl(view: string): (hit: SelectedHit) => string {
-  return (hit) => `${hit.repository}/${view}/${hit.branch}/${pathAnchor(hit)}`;
+function ghUrl(fileView: string, dirView?: string): UrlGenerator {
+  return (hit) => {
+    const view = isDirectory(hit) ? dirView : fileView;
+    if (view == null) return undefined;
+    return `${hit.repository}/${view}/${hit.branch}/${pathAnchor(hit)}`;
+  };
 }
 
 export type UrlGenerator = (hit: SelectedHit) => string | undefined;
@@ -29,11 +35,11 @@ export const URL_GENERATORS: readonly {
   {
     key: 'o',
     name: 'file view',
-    url: (hit) => `/file/${hit.directory}/${pathAnchor(hit)}`,
+    url: (hit) => `/${isDirectory(hit) ? 'list' : 'file'}/${hit.directory}/${pathAnchor(hit)}`,
   },
-  { key: 'g', name: 'file view in GitHub', url: ghUrl('blob') },
+  { key: 'g', name: 'file view in GitHub', url: ghUrl('blob', 'tree') },
   { key: 'b', name: 'blame view', url: ghUrl('blame') },
-  { key: 'h', name: 'history view', url: ghUrl('commits') },
+  { key: 'h', name: 'history view', url: ghUrl('commits', 'commits') },
 ]);
 
 const goToDispatcher = (navigate: NavigateFunction, urlGenerator: UrlGenerator, newWindow: boolean) => (): void => {

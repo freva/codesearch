@@ -1,7 +1,15 @@
-import { type ReactNode, useState } from 'react';
-import { useCustomCompareEffect } from '../../libs/use-custom-compare-callback';
+import { type ReactNode } from 'react';
+import { useCustomCompareMemo } from '../../libs/use-custom-compare-callback';
 import Prism from 'prismjs';
 import type { Range } from '../store';
+
+// We tokenize with Prism manually and render the result through React (one block <div> per line).
+// Disable Prism's automatic highlightAll(): it is scheduled via requestAnimationFrame on import,
+// which is paused while a tab is in the background (e.g. a result opened in a new tab). When the
+// tab is later focused, the deferred highlightAll() runs against our already-rendered DOM, re-reads
+// the <pre>'s textContent (no newlines, since our line breaks are block divs) and collapses the
+// whole file onto a single line. Manual mode prevents that DOM clobbering entirely.
+Prism.manual = true;
 
 // Import Prism languages
 import 'prismjs/components/prism-bash';
@@ -118,7 +126,7 @@ function highlightCodeReact(code: string, language: string, ranges: LineMatch[])
       <code className={`language-${language}`}>
         {lines.map((line, idx) => {
           const highlights = getHighlightsForLine(idx, ranges);
-          const tokens = Prism.tokenize(line, prismLang);
+          const tokens = prismLang ? Prism.tokenize(line, prismLang) : [line];
           return (
             <div key={idx} id={`L${idx + 1}`} className="line hover:bg-blue-50">
               {renderPrismTokens(tokens, highlights)}
@@ -139,11 +147,5 @@ export function CodeHighlight({
   path: string;
   ranges?: LineMatch[];
 }): ReactNode {
-  const [content, setContent] = useState<ReactNode>(<pre>{code}</pre>);
-  useCustomCompareEffect(() => {
-    const language = pathToLanguage(path);
-    setContent(highlightCodeReact(code, language, ranges));
-  }, [code, path, ranges]);
-
-  return content;
+  return useCustomCompareMemo(() => highlightCodeReact(code, pathToLanguage(path), ranges), [code, path, ranges]);
 }

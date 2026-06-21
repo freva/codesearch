@@ -3,16 +3,22 @@ import { ACTION } from '.';
 
 function* hitIterator(files: File[]): Generator<SelectedHit, undefined, unknown> {
   for (const file of files) {
+    const base = {
+      path: file.path,
+      directory: file.directory,
+      repository: file.repository,
+      branch: file.branch,
+    };
+
+    // For list/file-filter yield a single file-level hit (line 0) so the entry is still selectable/navigable.
+    let yielded = false;
     for (const line of file.lines ?? []) {
-      if (line.range != null)
-        yield {
-          path: file.path,
-          directory: file.directory,
-          repository: file.repository,
-          branch: file.branch,
-          line: line.number,
-        };
+      if (line.range != null) {
+        yielded = true;
+        yield { ...base, line: line.number };
+      }
     }
+    if (!yielded) yield { ...base, line: 0 };
   }
 }
 

@@ -1,4 +1,4 @@
-import { type DependencyList, useCallback, useEffect, useState } from 'react';
+import { type DependencyList, useCallback, useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash-es';
 
 export function useCustomCompareMemoize(
@@ -24,4 +24,12 @@ export function useCustomCompareEffect(
   depsEqual?: (a: DependencyList, b: DependencyList) => boolean,
 ): void {
   useEffect(effect, useCustomCompareMemoize(deps, depsEqual));
+}
+
+export function useCustomCompareMemo<T>(
+  factory: () => T,
+  deps: DependencyList,
+  depsEqual?: (a: DependencyList, b: DependencyList) => boolean,
+): T {
+  return useMemo(factory, useCustomCompareMemoize(deps, depsEqual));
 }

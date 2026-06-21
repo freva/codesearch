@@ -30,11 +30,16 @@ function CodeLine({ line, directory, path }: { line: Line; directory: string; pa
 
 function Hit({ file }: { file: File }): ReactNode {
   const filePath = `${file.directory}/${file.path}`;
+  // Line-less entries (list/file-filter results) are selected at the file level (line 0)
+  const isSelected = useSearchContext(
+    (ctx) =>
+      ctx.selectedHit?.line === 0 && ctx.selectedHit.path === file.path && ctx.selectedHit.directory == file.directory,
+  );
   return (
     <div className="my-2 w-full">
       <Link
         to={`${filePath.endsWith('/') ? '/list' : '/file'}/${filePath}${window.location.search}`}
-        className="truncate px-2 py-1 font-medium text-blue-600 hover:text-blue-800"
+        className={`truncate px-2 py-1 font-medium text-blue-600 hover:text-blue-800 ${isSelected ? 'bg-blue-100' : ''}`}
         title={filePath}
       >
         {filePath}

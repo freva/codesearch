@@ -371,3 +371,25 @@ func TestSyncRepos(t *testing.T) {
 		cfg.ManifestPath = tempManifestPath
 	})
 }
+
+func TestBuildGitAuthEnv(t *testing.T) {
+	servers := map[string]*config.Server{
+		"b":     {CloneURL: "https://b.example.com/", Token: "tb"},
+		"a":     {CloneURL: "https://github.com", Token: "ta"},
+		"ssh":   {CloneURL: "git@github.com", Token: "ts"},
+		"empty": {CloneURL: "https://c.example.com"},
+	}
+	expected := []string{
+		"GIT_CONFIG_COUNT=2",
+		"GIT_CONFIG_KEY_0=http.https://github.com/.extraHeader",
+		"GIT_CONFIG_VALUE_0=Authorization: Basic eC1hY2Nlc3MtdG9rZW46dGE=",
+		"GIT_CONFIG_KEY_1=http.https://b.example.com/.extraHeader",
+		"GIT_CONFIG_VALUE_1=Authorization: Basic eC1hY2Nlc3MtdG9rZW46dGI=",
+	}
+	if actual := buildGitAuthEnv(servers); !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+	if actual := buildGitAuthEnv(map[string]*config.Server{"empty": servers["empty"]}); actual != nil {
+		t.Errorf("Expected nil, got %v", actual)
+	}
+}

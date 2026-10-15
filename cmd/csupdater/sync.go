@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -35,8 +36,40 @@ func (exc execShellCommand) Run(stdout io.Writer, stderr io.Writer) error {
 	return exc.cmd.Run()
 }
 
+// gitEnv is appended to the environment of every command, used to pass git config without exposing it in arguments.
+var gitEnv []string
+
 var command = func(name string, arg ...string) IShellCommand {
-	return execShellCommand{cmd: exec.Command(name, arg...)}
+	cmd := exec.Command(name, arg...)
+	if len(gitEnv) > 0 {
+		cmd.Env = append(os.Environ(), gitEnv...)
+	}
+	return execShellCommand{cmd: cmd}
+}
+
+// buildGitAuthEnv returns environment variables that make git send each server's token as an HTTP
+// Authorization header.
+func buildGitAuthEnv(servers map[string]*config.Server) []string {
+	names := make([]string, 0, len(servers))
+	for name, server := range servers {
+		if server.Token != "" && strings.HasPrefix(server.CloneURL, "https://") {
+			names = append(names, name)
+		}
+	}
+	if len(names) == 0 {
+		return nil
+	}
+	sort.Strings(names)
+
+	env := []string{fmt.Sprintf("GIT_CONFIG_COUNT=%d", len(names))}
+	for i, name := range names {
+		server := servers[name]
+		credentials := base64.StdEncoding.EncodeToString([]byte("x-access-token:" + server.Token))
+		env = append(env,
+			fmt.Sprintf("GIT_CONFIG_KEY_%d=http.%s/.extraHeader", i, strings.TrimSuffix(server.CloneURL, "/")),
+			fmt.Sprintf("GIT_CONFIG_VALUE_%d=Authorization: Basic %s", i, credentials))
+	}
+	return env
 }
 
 // SyncRepos clones new repos, updates existing ones, and removes any that are no longer needed.
@@ -47,6 +80,8 @@ func SyncRepos(cfg *config.Config, verbose bool) error {
 	if err != nil {
 		return err
 	}
+
+	gitEnv = buildGitAuthEnv(cfg.Servers)
 
 	orphans, err := listWithMaxDepth(cfg.CodeDir, 3)
 	if err != nil {
